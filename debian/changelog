@@ -1,0 +1,457 @@
+logjam (4.5.3-6) unstable; urgency=low
+
+  * Move to source format 3.0 (quilt), very minimal changes needed
+  * Copy config.{guess,sub}
+  * debian/patches/02_glib_errors.patch:
+    - Apply patch from Richard Kettlewell to fix some GLib warnings
+      (Closes: #513825)
+
+ -- Ari Pollak <ari@debian.org>  Sat, 19 Dec 2009 18:39:54 -0500
+
+logjam (4.5.3-5) unstable; urgency=low
+
+  * Move to debhelper version 7 and quilt
+  * debian/patches/01_libsoup2.4.patch:
+    - Apply patch from https://bugzilla.redhat.com/show_bug.cgi?id=430966 to
+      update to libsoup2.4 API (Closes: #517590)
+
+ -- Ari Pollak <ari@debian.org>  Sat, 28 Feb 2009 17:48:53 -0500
+
+logjam (4.5.3-4) unstable; urgency=low
+
+  * Work around a freeze-while-input-lock-held when pressing Space in the Use
+    Journal menu - just destroy the submenu before overwriting it.
+    (Closes: #465102)
+  * Update menu section
+  * Make sure we don't build with SQLite or XMMS accidentally
+
+ -- Ari Pollak <ari@debian.org>  Sat, 08 Mar 2008 00:39:33 -0500
+
+logjam (4.5.3-3) unstable; urgency=low
+
+  * Drop XMMS/beep support, add audacious & quodlibet to supported
+    audio players (Closes: #461742)
+
+ -- Ari Pollak <ari@debian.org>  Sun, 20 Jan 2008 16:01:13 -0500
+
+logjam (4.5.3-2) unstable; urgency=low
+
+  * Change rhythmbox to rhythmbox-client (Closes: #425165)
+
+ -- Ari Pollak <ari@debian.org>  Sat, 19 May 2007 15:59:19 -0400
+
+logjam (4.5.3-1) unstable; urgency=low
+
+  * New upstream release
+    - German PO file has been updated upstream (Closes: #313788)
+
+ -- Ari Pollak <ari@debian.org>  Fri, 20 Jan 2006 11:24:09 -0500
+
+logjam (4.5.1-5) unstable; urgency=low
+
+  * Remove build-dependency on libcurl3-dev, it's no longer needed.
+  * Apply modified patch from Mark Wooding to fix proxy support
+    (Closes: #330161)
+
+ -- Ari Pollak <ari@debian.org>  Tue, 20 Dec 2005 16:20:05 +0000
+
+logjam (4.5.1-4) unstable; urgency=low
+
+  * The previous taglist change breaks clearing the taglist on a previous
+    entry, so revert it until a better fix can be found.
+
+ -- Ari Pollak <ari@debian.org>  Sun, 18 Sep 2005 16:51:47 -0400
+
+logjam (4.5.1-3) unstable; urgency=low
+
+  * Don't send the taglist property if the tag list isn't set,
+    so older servers will still work with a newer LogJam. (Closes: #328767)
+
+ -- Ari Pollak <ari@debian.org>  Sat, 17 Sep 2005 15:14:56 -0400
+
+logjam (4.5.1-2) unstable; urgency=low
+
+  * Remove intltool-* on Makefile.in distclean target, not intltool-*.in
+
+ -- Ari Pollak <ari@debian.org>  Sat,  3 Sep 2005 13:11:17 -0400
+
+logjam (4.5.1-1) unstable; urgency=low
+
+  * New upstream release (Closes: #326441)
+  * Build-depend on libsoup2.2-dev instead of libcurl3-dev now
+
+ -- Ari Pollak <ari@debian.org>  Sat,  3 Sep 2005 12:54:57 -0400
+
+logjam (4.4.1-3) unstable; urgency=low
+
+  * Bump build-depends to gtkspell >= 2.0.10-3, which now depends on
+    libaspell15c2 for the C++ ABI transition
+
+ -- Ari Pollak <ari@debian.org>  Sun, 10 Jul 2005 00:43:51 +0000
+
+logjam (4.4.1-2) unstable; urgency=low
+
+  * Clear undo manager history when loading an existing journal entry
+    so we don't screw up the undo stack (Closes: #290452)
+
+ -- Ari Pollak <ari@debian.org>  Mon, 21 Mar 2005 20:03:00 -0500
+
+logjam (4.4.1-1) unstable; urgency=low
+
+  * New upstream release (Closes: #289585)
+  * Apply patch from http://kir.vtx.ru/logjam/ to fix possible crash
+    in offline browser when "Copy URL" is pressed
+
+ -- Ari Pollak <ari@debian.org>  Sun,  9 Jan 2005 18:27:18 -0500
+
+logjam (4.4.0-6) unstable; urgency=low
+
+  * Fix configure script to properly build with curl support (Closes: #285638)
+
+ -- Ari Pollak <ari@debian.org>  Tue, 14 Dec 2004 11:14:17 -0500
+
+logjam (4.4.0-5) unstable; urgency=low
+
+  * Depend explicitly on libcurl3-dev, and remove dep on librsvg
+
+ -- Ari Pollak <ari@debian.org>  Sun,  8 Aug 2004 07:27:45 -0400
+
+logjam (4.4.0-4) unstable; urgency=low
+
+  * Rebuild without librsvg, which pretty much unnecessary and just
+    brings in GNOME for no reason. I feel a -gnome package coming on soon..
+
+ -- Ari Pollak <ari@debian.org>  Fri,  6 Aug 2004 00:46:30 -0400
+
+logjam (4.4.0-3) unstable; urgency=low
+
+  * Rebuild against gcrypt/gnutls11 (Closes: #263653)
+
+ -- Ari Pollak <ari@debian.org>  Thu,  5 Aug 2004 19:50:18 -0400
+
+logjam (4.4.0-2) unstable; urgency=low
+
+  * Fix compilation on gcc-3.4, thanks to Andreas Jochens for fix
+    (Closes: #260495)
+  * Fix order of qtype_to_string[] in pollcreator.c (Closes: #253053)
+  * Change category of desktop item to Network (Closes: #257555, #256898)
+  * Update the Refresh button on the Music bar when the music program
+    setting has changed. (Closes: #259898)
+
+ -- Ari Pollak <ari@debian.org>  Wed, 21 Jul 2004 11:18:35 -0400
+
+logjam (4.4.0-1) unstable; urgency=low
+
+  * New upstream release
+    - Fix for "Load More..." entries repeating (Closes: #239152)
+    - Fix for default security not applied to new entries (Closes: #239153)
+    - Clickable account name implemented (Closes: #234039)
+
+ -- Ari Pollak <ari@debian.org>  Wed,  7 Apr 2004 18:23:28 -0400
+
+logjam (4.3.2-2) unstable; urgency=low
+
+  * s/Firebird/Firefox/
+
+ -- Ari Pollak <ari@debian.org>  Mon,  1 Mar 2004 17:38:29 -0500
+
+logjam (4.3.2-1) unstable; urgency=low
+
+  * New upstream release (Closes: #233722, #233725)
+
+ -- Ari Pollak <ari@debian.org>  Mon,  1 Mar 2004 09:19:26 -0500
+
+logjam (4.3.1-2) unstable; urgency=low
+
+  * Really add libxml-parser-perl to build-deps
+
+ -- Ari Pollak <ari@debian.org>  Fri, 20 Feb 2004 14:36:19 -0500
+
+logjam (4.3.1-1) unstable; urgency=low
+
+  * New upstream release
+  * Add libxml-parser-perl to build-depends (maybe this should be intltool
+    instead?) (Closes: #233921)
+
+ -- Ari Pollak <ari@debian.org>  Fri, 20 Feb 2004 14:24:46 -0500
+
+logjam (4.3.0-2) unstable; urgency=low
+
+  * Apply upstream patch to prevent clobbering of files when saving.
+
+ -- Ari Pollak <ari@debian.org>  Wed, 11 Feb 2004 18:15:27 -0500
+
+logjam (4.3.0-1) unstable; urgency=low
+
+  * New upstream release (Closes: #228698, #211177, #222520)
+  * Drop gtkhtml3 support, there are way too many dependencies for so
+    little functionality. (Closes: #199747)
+  * XMMS music detection support is now in the logjam-xmms package
+
+ -- Ari Pollak <ari@debian.org>  Sat,  7 Feb 2004 20:54:02 -0500
+
+logjam (4.2.4-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Ari Pollak <ari@debian.org>  Sat, 16 Aug 2003 23:34:53 -0400
+
+logjam (4.2.3-2) unstable; urgency=low
+
+  * Rebuild against latest libgal (Closes: #205423)
+
+ -- Ari Pollak <ari@debian.org>  Thu, 14 Aug 2003 14:04:53 -0400
+
+logjam (4.2.3-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Ari Pollak <ari@debian.org>  Wed,  6 Aug 2003 19:24:51 -0400
+
+logjam (4.2.2-2) unstable; urgency=low
+
+  * Fix build-depends (Closes: 199630)
+
+ -- Ari Pollak <ari@debian.org>  Tue,  1 Jul 2003 21:05:47 -0400
+
+logjam (4.2.2-1) unstable; urgency=low
+
+  * New upstream release
+  * WARNING: The format of the offline journal sync has changed. LogJam
+    should recognize the new version, but you should delete & re-sync
+    your offline journal. Run the following to delete the older version:
+      rm -rf ~/.logjam/servers/LiveJournal/users/yourusername/journal
+  
+ -- Ari Pollak <ari@debian.org>  Thu, 26 Jun 2003 22:53:58 -0400
+
+logjam (4.2.1-1) unstable; urgency=low
+
+  * New upstream release (Closes: #196357)
+
+ -- Ari Pollak <ari@debian.org>  Mon, 16 Jun 2003 00:27:28 -0400
+
+logjam (4.2.0-1) unstable; urgency=low
+
+  * New upstream release
+  * Notable changes:
+    - Undo/Redo (by me)
+    - Offline journal sync
+    - Smart Quotes
+  
+ -- Ari Pollak <ari@debian.org>  Wed,  4 Jun 2003 23:49:29 -0400
+
+logjam (4.1.2-5) unstable; urgency=low
+
+  * Build against gtkhtml - introduces HTML Preview
+
+ -- Ari Pollak <ari@debian.org>  Wed,  4 Jun 2003 19:31:01 -0400
+
+logjam (4.1.2-4) unstable; urgency=low
+
+  * Fix menu.c patch (added in -3) to final CVS version, which fixes a 
+    bug that was introduced with -3
+
+ -- Ari Pollak <ari@debian.org>  Wed, 30 Apr 2003 21:10:35 -0400
+
+logjam (4.1.2-3) unstable; urgency=low
+
+  * unstable dist release to fix compilation on alpha
+
+ -- Ari Pollak <ari@debian.org>  Wed, 30 Apr 2003 11:27:02 -0400
+
+logjam (4.1.2-1) unstable; urgency=low
+
+  * New upstream release, to unstable because this fixes a bunch of annoying
+    bugs present in 4.0.x and 4.1.x.
+  * A version with HTML Preview will be in the experimental distribution,
+    since it builds against libgtkhtml3.0-0
+  * Add watch file
+
+ -- Ari Pollak <ari@debian.org>  Tue, 29 Apr 2003 17:44:43 -0400
+
+logjam (4.1.1-2) experimental; urgency=low
+
+  * Apply patch from upstream CVS to cleanup child processes properly.
+  * Fix menu icon
+  * Update description
+
+ -- Ari Pollak <ari@debian.org>  Tue, 15 Apr 2003 00:39:32 -0400
+
+logjam (4.1.1-1) experimental; urgency=low
+
+  * New upstream release
+  * Make menu entry use xpm icon instead of PNG
+
+ -- Ari Pollak <ari@debian.org>  Sat, 12 Apr 2003 23:05:42 -0400
+
+logjam (4.1.0-5) experimental; urgency=low
+
+  * Experimental dist release, which includes the HTML previewer
+
+ -- Ari Pollak <ari@debian.org>  Tue,  8 Apr 2003 13:51:21 -0400
+
+logjam (4.1.0-4) unstable; urgency=low
+
+  * Don't depend on gtkhtml3.0, it's only in experimental. 4.1.0-5 will 
+    be uploaded to experimental, and depend on gtkhtml3.0.
+
+ -- Ari Pollak <ari@debian.org>  Tue,  8 Apr 2003 13:46:59 -0400
+
+logjam (4.1.0-3) unstable; urgency=low
+
+  * Fix some sizing issues with the manager window, and make the XMMS
+    detection error a bit more sane.
+
+ -- Ari Pollak <ari@debian.org>  Tue,  8 Apr 2003 13:35:38 -0400
+
+logjam (4.1.0-2) unstable; urgency=low
+
+  * Correct compiler warning: %ld -> %ud
+
+ -- Ari Pollak <ari@debian.org>  Tue,  8 Apr 2003 10:26:45 -0400
+
+logjam (4.1.0-1) unstable; urgency=low
+
+  * New upstream release
+  * The configuration format has changed (hopefully for the last time) to
+    support saving drafts. You'll need to enter your username/password again.
+
+ -- Ari Pollak <ari@debian.org>  Tue,  8 Apr 2003 09:59:27 -0400
+
+logjam (4.0.2-3) unstable; urgency=low
+
+  * Incorporate interim checkfriends docklet for GNOME2/KDE3 which has 
+    been submitted upstream - hopefully 4.1.0 will be actively updated 
+    soon.
+
+ -- Ari Pollak <ari@debian.org>  Sun, 23 Mar 2003 02:19:42 -0500
+
+logjam (4.0.2-2) unstable; urgency=low
+
+  * A compile warning fix for ljtypes.c from upstream 4.0 CVS (if 4.0.3 
+    ever gets released)
+
+ -- Ari Pollak <ari@debian.org>  Sun, 23 Feb 2003 03:22:48 -0500
+
+logjam (4.0.2-1) unstable; urgency=low
+
+  * New upstream release
+    - Fixes a problem with moods & LiveJournal
+
+ -- Ari Pollak <ari@debian.org>  Sat, 22 Feb 2003 17:33:14 -0500
+
+logjam (4.0.1-5) unstable; urgency=low
+
+  * Update build-depends to depend on libgtkspell-dev >= 2.0.4
+
+ -- Ari Pollak <ari@debian.org>  Mon, 20 Jan 2003 14:26:51 -0500
+
+logjam (4.0.1-4) unstable; urgency=low
+
+  * Added patch from upstream author to add seperate WM_CLASS for the 
+    checkfriends indicator (Closes; #177304)
+
+ -- Ari Pollak <ari@debian.org>  Sat, 18 Jan 2003 20:54:31 -0500
+
+logjam (4.0.1-3) unstable; urgency=low
+
+  * Rebuild against gtkspell 2.0.4, which uses aspell
+
+ -- Ari Pollak <ari@debian.org>  Sat, 18 Jan 2003 16:38:56 -0500
+
+logjam (4.0.1-2) unstable; urgency=low
+
+  * Don't quote browser commands unnecessarily (Closes: #174629)
+    - You might have to select the appropriate entry in Preferences 
+      again to fix this
+
+ -- Ari Pollak <ari@debian.org>  Sun, 29 Dec 2002 12:00:16 -0500
+
+logjam (4.0.1-1) unstable; urgency=low
+
+  * New upstream release, new maintainer:
+    "I'm happy if you can take it and continue with the work you are doing
+     with logjam packages. :) If you want, it's already yours!" -- Christian
+  * Acknowledge NMU (Closes: #165281, #166993)
+
+ -- Ari Pollak <ari@debian.org>  Thu, 12 Dec 2002 11:42:04 -0500
+
+logjam (4.0.0+cvs.2002.11.17-0.3) unstable; urgency=low
+
+  * NMU
+  * Add libxml2-dev to Build-Depends.
+
+ -- Ari Pollak <ari@debian.org>  Sun, 17 Nov 2002 19:22:41 -0500
+
+logjam (4.0.0+cvs.2002.11.17-0.1) unstable; urgency=low
+
+  * NMU, after receiving no reply from real maintainer for a while
+  * New upstream release (Closes: #165281, #166993)
+  * Updated standards-version to 3.5.7, fix debian/rules appropriately
+
+ -- Ari Pollak <ari@debian.org>  Sun, 17 Nov 2002 14:14:39 -0400
+
+logjam (3.0.3-1) unstable; urgency=low
+
+  * New upstream release
+  * Standards-Version: 3.5.6
+  * Removed default debian/{preinst,postinst,prerm,postrm}
+
+ -- Christian Surchi <csurchi@debian.org>  Tue,  2 Apr 2002 03:00:45 +0200
+
+logjam (3.0.2-1) unstable; urgency=low
+
+  * New upstream release (Closes:#135618)
+
+ -- Christian Surchi <csurchi@debian.org>  Thu, 28 Feb 2002 19:43:04 +0100
+
+logjam (3.0.1-2) unstable; urgency=low
+
+  * Added missing dependency on libcurl-dev (Closes:#120754)
+ 
+ -- Christian Surchi <csurchi@debian.org>  Fri, 23 Nov 2001 10:48:04 -0500
+
+logjam (3.0.1-1) unstable; urgency=low
+
+  * New upstream release (Closes:#113923)
+
+ -- Christian Surchi <csurchi@debian.org>  Sun, 11 Nov 2001 09:48:57 -0500
+
+logjam (3.0.0-1) unstable; urgency=low
+
+  * New upstream release 
+  * Package name change (upstream) from loserjabber to logjam
+  * Binary is now logjam
+  * Not uploaded
+
+ -- Christian Surchi <csurchi@debian.org>  Fri,  2 Nov 2001 15:32:07 -0500
+
+loserjabber (2.1.5-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christian Surchi <csurchi@debian.org>  Tue, 20 Feb 2001 12:25:25 -0500
+
+loserjabber (2.1.4-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christian Surchi <csurchi@debian.org>  Mon, 19 Feb 2001 23:04:58 +0100
+
+loserjabber (2.0.0-1) unstable; urgency=low
+
+  * New upstream release
+  * Dynamic support for xmms (extract the title of played song)
+  * Binary is now loserjabber and not lj
+
+ -- Christian Surchi <csurchi@debian.org>  Mon,  9 Oct 2000 15:29:59 +0200
+
+loserjabber (1.9.6-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Christian Surchi <csurchi@debian.org>  Mon, 11 Sep 2000 15:05:52 +0200
+
+Local variables:
+mode: debian-changelog
+End:
