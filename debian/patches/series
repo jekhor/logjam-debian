@@ -1,3 +1,1 @@
-00_debian.patch
-01_libsoup2.4.patch
-02_glib_errors.patch
+0001-Apply-patch-00_debian.patch.patch
