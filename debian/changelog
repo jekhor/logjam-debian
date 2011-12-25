@@ -1,3 +1,10 @@
+logjam (4.6.2-1) unstable; urgency=low
+
+  * New upstream version
+  * Switch to new debhelper rules file
+
+ -- Yauhen Kharuzhy <jekhor@gmail.com>  Mon, 26 Dec 2011 01:32:30 +0300
+
 logjam (4.5.3-6) unstable; urgency=low
 
   * Move to source format 3.0 (quilt), very minimal changes needed
