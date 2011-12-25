@@ -1,0 +1,11 @@
+This package was debianized by Christian Surchi <csurchi@debian.org> on
+Fri,  2 Nov 2001 15:32:07 -0500.
+
+It was downloaded from http://logjam.danga.com
+
+Upstream Author: Evan Martin <evan@livejournal.com>
+Copyright (C) 2000-2003 Evan Martin <evan@livejournal.com>
+
+Its license is GPLv2 or later, which, on Debian systems, is available at:
+/usr/share/common-licenses/GPL-2.
+

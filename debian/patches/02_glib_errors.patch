@@ -1,0 +1,38 @@
+commit ef7646a41f667f2640bba67309328b4cd145f3e6
+Author: Richard Kettlewell <richard@kakajou.local>
+Date:   Sat Dec 19 21:02:13 2009 +0000
+
+    Move GTK initialization a bit earlier, since init_app() wants to call
+    into GTK.  Possibly a better fix would be to move the GTK call to
+    somewhere else but this does work.
+    
+    cf http://bugs.debian.org/513825
+
+diff --git a/src/init.c b/src/init.c
+index 7798dc4..d07ad11 100644
+--- a/src/init.c
++++ b/src/init.c
+@@ -201,11 +201,6 @@ main(int argc, char* argv[]) {
+ 
+ 	setup_glibgdk();
+ 
+-	init_app(&argc, argv); /* should be called before conf_read */
+-	conf_read(&conf, app.conf_dir);
+-	set_defaults();
+-	jam_account_logjam_init();
+-
+ #ifdef HAVE_GTK
+ #ifdef G_OS_WIN32
+ 	gtk_rc_add_default_file("gtkrc");
+@@ -213,6 +208,11 @@ main(int argc, char* argv[]) {
+ 	has_gtk = gtk_init_check(&argc, &argv);
+ #endif
+ 
++	init_app(&argc, argv); /* should be called before conf_read */
++	conf_read(&conf, app.conf_dir);
++	set_defaults();
++	jam_account_logjam_init();
++
+ 	doc = jam_doc_new();
+ 	cmdline_parse(doc, argc, argv); /* may terminate. */
+ 
