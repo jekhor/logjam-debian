@@ -1,0 +1,76 @@
+From: Yauhen Kharuzhy <jekhor@gmail.com>
+Date: Mon, 26 Dec 2011 01:18:23 +0300
+Subject: Apply patch 00_debian.patch
+
+Signed-off-by: Yauhen Kharuzhy <jekhor@gmail.com>
+---
+ src/menu.c     |    5 +++++
+ src/music.c    |    3 ++-
+ src/music.h    |    2 ++
+ src/settings.c |    8 +-------
+ 4 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/src/menu.c b/src/menu.c
+index 22c2b08..d7bf4af 100644
+--- a/src/menu.c
++++ b/src/menu.c
+@@ -424,6 +424,11 @@ menu_usejournal_changed(JamWin *jw) {
+ 		return;
+ 	}
+ 
++	/* Hack: destroy the submenu in case it's still displayed while this is
++	 * called (e.g. user presses Space), since otherwise GTK will crap itself
++	 * while an input lock is held */
++	if (GTK_IS_WIDGET(gtk_menu_item_get_submenu(GTK_MENU_ITEM(musejournal))))
++		gtk_widget_destroy(gtk_menu_item_get_submenu(GTK_MENU_ITEM(musejournal)));
+ 	menu = usejournal_build_menu(u->username,
+ 	                             jam_doc_get_usejournal(jw->doc),
+ 	                             u->usejournals,
+diff --git a/src/music.c b/src/music.c
+index 33e8472..2528f4e 100644
+--- a/src/music.c
++++ b/src/music.c
+@@ -19,8 +19,9 @@ const CommandList music_commands[] = {
+ 	{ "Banshee", "logjam-banshee-client" },
+ 	{ "Music Player Daemon", "sh -c \"mpc | grep -v '^volume: .* repeat: .* random: .*'\"" },
+ 	{ "Rhythmbox", "rhythmbox-client --print-playing" },
+-	{ "XMMS / Beep", "logjam-xmms-client" },
+ 	{ "amaroK", "dcop amarok player nowPlaying" },
++	{ "Audacious", "audtool current-song" },
++	{ "Quod Libet", "quodlibet --print-playing" },
+ 	{ NULL, NULL }
+ };
+ 
+diff --git a/src/music.h b/src/music.h
+index e5ee4e1..99c3cb8 100644
+--- a/src/music.h
++++ b/src/music.h
+@@ -19,6 +19,8 @@ typedef enum {
+ 	MUSIC_SOURCE_RHYTHMBOX,
+ 	MUSIC_SOURCE_XMMS,
+ 	MUSIC_SOURCE_AMAROK,
++	MUSIC_SOURCE_AUDACIOUS,
++	MUSIC_SOURCE_QUODLIBET,
+ 	MUSIC_SOURCE_CUSTOM,
+ 	MUSIC_SOURCE_COUNT
+ } MusicSource;
+diff --git a/src/settings.c b/src/settings.c
+index 2a63937..9627717 100644
+--- a/src/settings.c
++++ b/src/settings.c
+@@ -537,13 +537,7 @@ music_diagnose(GtkWidget *button) {
+ 	}
+ 
+ 	if (!music) {
+-		if (source == MUSIC_SOURCE_XMMS &&
+-				err->domain == G_SPAWN_ERROR && err->code == G_SPAWN_ERROR_NOENT) {
+-			jam_warning(dlg, _("LogJam XMMS helper not found.  "
+-						"Did you install LogJam's XMMS support?"));
+-		} else {
+-			jam_warning(dlg, _("Error detecting music: %s"), err->message);
+-		}
++		jam_warning(dlg, _("Error detecting music: %s"), err->message);
+ 		g_error_free(err);
+ 		return;
+ 	}
+-- 
