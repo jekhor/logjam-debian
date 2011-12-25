@@ -1,1 +1,2 @@
 00_debian.patch
+0002-Remove-m4-directory-inclusion-from-Makefile.am.patch
