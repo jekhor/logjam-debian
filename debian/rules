@@ -1,5 +1,13 @@
 #!/usr/bin/make -f
 
+override_dh_autoreconf:
+	touch NEWS AUTHORS
+	dh_autoreconf
+
+override_dh_autoreconf_clean:
+	dh_autoreconf_clean
+	rm -f NEWS AUTHORS
+
 override_dh_auto_configure:
 	dh_auto_configure -- --with-gtkspell --with-libsoup --without-gtkhtml --without-librsvg --without-sqlite3 --without-xmms
 
