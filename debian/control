@@ -1,7 +1,7 @@
 Source: logjam
 Section: net
 Priority: optional
-Maintainer: Ari Pollak <ari@debian.org> 
+Maintainer: Yauhen Kharuzhy <jekhor@gmail.com>
 Build-Depends: quilt, debhelper (>= 8.0.0), autotools-dev, libgtk2.0-dev,
  libgtkspell-dev (>= 2.0.4), libxml2-dev, libxml-parser-perl, libsoup2.4-dev,
  libgtkhtml3.14-dev

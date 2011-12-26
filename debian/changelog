@@ -1,7 +1,7 @@
-logjam (4.6.2-1) unstable; urgency=low
+logjam (4.6.2-1~jekhor1) unstable; urgency=low
 
   * New upstream version
-  * Switch to new debhelper rules file
+  * Switch to new debian/rules file style
 
  -- Yauhen Kharuzhy <jekhor@gmail.com>  Mon, 26 Dec 2011 01:32:30 +0300
 
