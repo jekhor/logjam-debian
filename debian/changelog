@@ -1,3 +1,15 @@
+logjam (4.6.2-1~jekhor2) unstable; urgency=low
+
+  [ Yauhen Kharuzhy ]
+  * Enable SVG throbber
+
+  [ Andrew Shadura ]
+  * fix debian/watch
+  * use install file to install the xpm icon
+  * no need in quilt once more
+
+ -- Yauhen Kharuzhy <jekhor@gmail.com>  Tue, 27 Dec 2011 02:05:51 +0300
+
 logjam (4.6.2-1~jekhor1) unstable; urgency=low
 
   * New upstream version
