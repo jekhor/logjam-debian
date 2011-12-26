@@ -7,5 +7,5 @@ override_dh_auto_configure:
 	dh_auto_configure -- --with-gtkspell --with-libsoup --with-gtkhtml314 --with-librsvg --without-sqlite3 --without-xmms
 
 %:
-	dh $@ --with quilt,autoreconf
+	dh $@ --with autoreconf
 
