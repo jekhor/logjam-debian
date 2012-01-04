@@ -1,10 +1,9 @@
 #!/usr/bin/make -f
 
+export LDFLAGS=-Wl,--as-needed
+
 override_dh_auto_configure:
 	dh_auto_configure -- --with-gtkspell --with-libsoup --with-gtkhtml314 --with-librsvg --without-sqlite3 --without-xmms
-
-override_dh_auto_build:
-	dh_auto_build -- LDFLAGS="$(LDFLAGS) -Wl,--as-needed"
 
 %:
 	dh $@
