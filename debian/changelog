@@ -1,7 +1,7 @@
 logjam (4.6.2-1) unstable; urgency=low
 
   * New upstream version (Closes: #653325, #239249, #605309, #315485)
-  * Switch to short dh8 form.
+  * Switch to short dh9 form.
   * Enable SVG throbber
   * Link with needed libraries only
   * Change maintainer
