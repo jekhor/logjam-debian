@@ -1,21 +1,11 @@
-logjam (4.6.2-1~jekhor2) unstable; urgency=low
+logjam (4.6.2-1) unstable; urgency=low
 
-  [ Yauhen Kharuzhy ]
-  * Enable SVG throbber
-
-  [ Andrew Shadura ]
-  * fix debian/watch
-  * use install file to install the xpm icon
-  * no need in quilt once more
-
- -- Yauhen Kharuzhy <jekhor@gmail.com>  Tue, 27 Dec 2011 02:05:51 +0300
-
-logjam (4.6.2-1~jekhor1) unstable; urgency=low
-
-  * New upstream version
+  * New upstream version (Closes: #653325, #239249, #605309, #315485)
   * Switch to short dh8 form.
+  * Enable SVG throbber
+  * Change maintainer
 
- -- Yauhen Kharuzhy <jekhor@gmail.com>  Mon, 26 Dec 2011 01:32:30 +0300
+ -- Yauhen Kharuzhy <jekhor@gmail.com>  Wed, 04 Jan 2012 23:39:38 +0300
 
 logjam (4.5.3-6) unstable; urgency=low
 
