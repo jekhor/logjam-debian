@@ -24,19 +24,20 @@
 #include "tie.h"
 #include "account.h"
 #include "jamview.h"
+#include "lj_dbus.h"
 
 /* what's this?  all of these funny structures in the settings box?
  * well, instead of creating and tearing down all of these widgets, i
  * try to pull out shared functionality.
  *
- * it's loosely inspired by george lebl's pong 
+ * it's loosely inspired by george lebl's pong
  *   http://www.5z.com/jirka/pong-documentation/
  * but i've never actaully read how that works.
  *
  *
  * we have a collection of SettingsWidgets that track their name and
  * configuration option, and then it's all nicely automated through functions
- * of the form sw_*(). 
+ * of the form sw_*().
  */
 
 typedef enum {
@@ -65,28 +66,38 @@ struct _SettingsWidget {
 static void run_cfmask_settings_dlg(SettingsWidget *sw);
 
 static SettingsWidget settingswidgets[] = {
-	{ "ui_revertusejournal", &conf.options.revertusejournal, 
+	{ "ui_revertusejournal", &conf.options.revertusejournal,
 		SW_TOGGLE, N_("_Revert to primary journal after posting on a community"), NULL },
-	{ "ui_defaultsecurity", &conf.defaultsecurity, 
+	{ "ui_defaultsecurity", &conf.defaultsecurity,
 		SW_CUSTOM, N_("Default _security on posts:") },
 	{ "ui_autosave", &conf.options.autosave,
 		SW_TOGGLE, N_("Automatically save _drafts (for crash recovery)") },
 
 	{ "ui_allowmultipleinstances", &conf.options.allowmultipleinstances,
 		SW_TOGGLE, N_("Allow multiple _instances of LogJam to run simultaneously") },
+
+	{ "ui_keepsaveddrafts", &conf.options.keepsaveddrafts,
+		SW_TOGGLE, N_("_Keep saved drafts after posting") },
+
 #ifdef HAVE_GTKSPELL
-	{ "ui_spellcheck", &conf.options.usespellcheck, 
+	{ "ui_spellcheck", &conf.options.usespellcheck,
 		SW_TOGGLE, N_("_Use spell check") },
 	{ "ui_spell_language", &conf.spell_language,
 		SW_TEXT, N_("Entry _language:") },
 #endif
+	{ "ui_showloginhistory", &conf.options.showloginhistory,
+		SW_TOGGLE, N_("Show login history (number of days since last login)") },
 	{ "ui_smartquotes", &conf.options.smartquotes,
 		SW_TOGGLE, N_("Automatically change _quotes to matching pairs") },
 	{ "ui_font", &conf.uifont,
 		SW_CUSTOM, N_("Entry display font:") },
 #ifndef G_OS_WIN32
+	{ "ui_close_when_send", &conf.options.close_when_send,
+		SW_TOGGLE, N_("Close main window after sending") },
 	{ "ui_docklet", &conf.options.docklet,
 		SW_TOGGLE, N_("Add icon to system _tray (for GNOME/KDE/etc. dock)") },
+	{ "ui_start_in_dock", &conf.options.start_in_dock,
+		SW_TOGGLE, N_("Start in system tray") },
 #endif
 
 #ifndef G_OS_WIN32
@@ -95,27 +106,29 @@ static SettingsWidget settingswidgets[] = {
 
 	{ "music_command", &conf.music_command,
 		SW_COMMAND, N_("Detect music from:"), (gpointer)music_commands },
+	{ "music_mpris", &conf.music_mpris,
+		SW_TOGGLE, N_("Detect music via MPRIS") },
 
-	{ "net_useproxy", &conf.options.useproxy, 
+	{ "net_useproxy", &conf.options.useproxy,
 		SW_TOGGLE, N_("Use _proxy server") },
-	{ "net_proxy", &conf.proxy, 
+	{ "net_proxy", &conf.proxy,
 		SW_TEXT, N_("UR_L:") },
 
-	{ "net_useproxyauth", &conf.options.useproxyauth, 
+	{ "net_useproxyauth", &conf.options.useproxyauth,
 		SW_TOGGLE, N_("Use proxy _authentication") },
-	{ "net_proxyuser", &conf.proxyuser, 
+	{ "net_proxyuser", &conf.proxyuser,
 		SW_TEXT, N_("_User:") },
-	{ "net_proxypass", &conf.proxypass, 
+	{ "net_proxypass", &conf.proxypass,
 		SW_TEXT, N_("_Password:") },
 #endif
 
-	{ "debug_netdump", &conf.options.netdump, 
+	{ "debug_netdump", &conf.options.netdump,
 		SW_TOGGLE, N_("Dump _network data on stderr") },
 #ifndef G_OS_WIN32
-	{ "debug_nofork", &conf.options.nofork, 
+	{ "debug_nofork", &conf.options.nofork,
 		SW_TOGGLE, N_("Don't _fork on network requests") },
 #else
-	{ "debug_nofork", &conf.options.nofork, 
+	{ "debug_nofork", &conf.options.nofork,
 		SW_TOGGLE, N_("Don't run network requests in a separate _thread") },
 #endif
 
@@ -136,14 +149,14 @@ static SettingsWidget settingswidgets[] = {
 		SW_TOGGLE, N_("_Raise floating indicator when new entries detected") },
 	{ "cf_float_decorate", &conf.options.cffloat_decorate,
 		SW_TOGGLE, N_("Show _titlebar on floating indicator") },
-	
+
 	{ NULL }
 };
 
 static SettingsWidget*
 sw_lookup(char *name) {
 	SettingsWidget *sw;
-	for (sw = settingswidgets; sw->name; sw++) 
+	for (sw = settingswidgets; sw->name; sw++)
 		if (strcmp(name, sw->name) == 0) return sw;
 	g_error("sw_lookup failed for %s", name);
 	return NULL;
@@ -151,15 +164,28 @@ sw_lookup(char *name) {
 
 static void
 toggle_enable_cb(GtkWidget *toggle, GtkWidget *target) {
-	gtk_widget_set_sensitive(target, 
+	gtk_widget_set_sensitive(target,
 			gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
 }
 static void
 toggle_tie_enable(GtkWidget *toggle, GtkWidget *target) {
-	gtk_widget_set_sensitive(target, 
+	gtk_widget_set_sensitive(target,
 			gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
 	g_signal_connect(G_OBJECT(toggle), "toggled",
 			G_CALLBACK(toggle_enable_cb), target);
+}
+
+static void
+toggle_disable_cb(GtkWidget *toggle, GtkWidget *target) {
+	gtk_widget_set_sensitive(target,
+			!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+}
+static void
+toggle_tie_disable(GtkWidget *toggle, GtkWidget *target) {
+	gtk_widget_set_sensitive(target,
+			!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle)));
+	g_signal_connect(G_OBJECT(toggle), "toggled",
+			G_CALLBACK(toggle_disable_cb), target);
 }
 
 static void
@@ -269,7 +295,7 @@ command_make(SettingsWidget *sw) {
 			labelled_box_new_sg(_(sw->caption), sw->widget, sg),
 			FALSE, FALSE, 0);
 	sw->data2 = labelled_box_new_sg(NULL, sw->subwidget, sg);  /* ugh. */
-	gtk_box_pack_start(GTK_BOX(vbox), 
+	gtk_box_pack_start(GTK_BOX(vbox),
 			sw->data2,
 			FALSE, FALSE, 0);
 	return vbox;
@@ -302,7 +328,7 @@ sw_make_sg(char *name, GtkSizeGroup *sg) {
 				gdouble default_value = *(gint*)sw->conf;
 				GtkObject *adj = gtk_adjustment_new(default_value,
 						/* client code should override these */
-						G_MINDOUBLE, G_MAXDOUBLE, 1.0, 1.0, 1.0);
+						G_MINDOUBLE, G_MAXDOUBLE, 1.0, 1.0, 0);
 				sw->widget = gtk_spin_button_new(GTK_ADJUSTMENT(adj), 1, 1);
 			}
 			spin_integer_tie(sw);
@@ -340,10 +366,10 @@ run_fontsel_settings_dlg(SettingsWidget *sw) {
 
 	dlg = gtk_font_selection_dialog_new(_("Select font"));
 	gtk_font_selection_dialog_set_font_name(GTK_FONT_SELECTION_DIALOG(dlg),
-			gtk_label_get_text(GTK_LABEL(sw->widget))); 
-	
+			gtk_label_get_text(GTK_LABEL(sw->widget)));
+
 	if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
-		gtk_label_set_text(GTK_LABEL(sw->widget), 
+		gtk_label_set_text(GTK_LABEL(sw->widget),
 				gtk_font_selection_dialog_get_font_name(
 						GTK_FONT_SELECTION_DIALOG(dlg)));
 	}
@@ -360,8 +386,8 @@ run_fontsel_settings_dlg(SettingsWidget *sw) {
 		jam_widget_set_font(sw->data, newfont);
 	}
 	g_free(oldfont);
-	
-	gtk_widget_destroy(dlg); 
+
+	gtk_widget_destroy(dlg);
 }
 
 #ifdef USE_DOCK
@@ -395,10 +421,16 @@ uisettings(JamWin *jw) {
 			G_CALLBACK(sec_changed_cb), sw);
 	groupedbox_pack(GROUPEDBOX(post), sw_make("ui_defaultsecurity"), FALSE);
 
+#ifdef USE_DOCK
+	groupedbox_pack(GROUPEDBOX(post), sw_make("ui_close_when_send"), FALSE);
+#endif /* USE_DOCK */
+
 	entry = groupedbox_new_with_text(_("Entries"));
 	gtk_box_pack_start(GTK_BOX(vbox), entry, FALSE, FALSE, 0);
 
 	groupedbox_pack(GROUPEDBOX(entry), sw_make("ui_autosave"), FALSE);
+
+	groupedbox_pack(GROUPEDBOX(entry), sw_make("ui_keepsaveddrafts"), FALSE);
 
 #ifdef HAVE_GTKSPELL
 	{
@@ -422,9 +454,10 @@ uisettings(JamWin *jw) {
 	}
 #endif
 
+	groupedbox_pack(GROUPEDBOX(entry), sw_make("ui_showloginhistory"), TRUE);
 	groupedbox_pack(GROUPEDBOX(entry),
 			sw_make("ui_smartquotes"), FALSE);
-	
+
 	sw = sw_lookup("ui_font");
 	if (conf.uifont == NULL) {
 		fontname = pango_font_description_to_string(
@@ -460,6 +493,7 @@ uisettings(JamWin *jw) {
 	g_signal_connect(G_OBJECT(button), "toggled",
 			G_CALLBACK(docklet_change_cb), jw);
 	groupedbox_pack(GROUPEDBOX(misc), button, FALSE);
+	groupedbox_pack(GROUPEDBOX(misc), sw_make("ui_start_in_dock"), FALSE);
 #endif /* USE_DOCK */
 
 	return vbox;
@@ -488,15 +522,20 @@ music_diagnose(GtkWidget *button) {
 	GtkWindow *dlg = GTK_WINDOW(gtk_widget_get_toplevel(button));
 	GError *err = NULL;
 	char *music, *result;
-	MusicSource source = music_current_source();
+	MusicSource source = MUSIC_SOURCE_NONE;
 
-	if (!music_can_detect(&err)) {
-		jam_warning(dlg, "%s", err->message);
-		g_error_free(err);
-		return;
+	if (conf.music_mpris) {
+		music = lj_dbus_mpris_current_music(jdbus, &err);
+	} else {
+		source = music_current_source();
+		if (!music_can_detect(&err)) {
+			jam_warning(dlg, "%s", err->message);
+			g_error_free(err);
+			return;
+		}
+		music = music_detect(&err);
 	}
 
-	music = music_detect(&err);
 	if (!music) {
 		if (source == MUSIC_SOURCE_XMMS &&
 				err->domain == G_SPAWN_ERROR && err->code == G_SPAWN_ERROR_NOENT) {
@@ -543,19 +582,38 @@ proxysettings(void) {
 	return group;
 }
 
+static void
+mpris_update_cb(GtkToggleButton *button, JamDBus *jd) {
+	GError *error = NULL;
+	if (!lj_dbus_mpris_update_list(jdbus, &error)) {
+		GtkWindow *dlg = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(button)));
+		jam_warning(dlg, _("Error detecting music: %s"), error->message);
+		g_error_free(error);
+	}
+}
+
 static GtkWidget*
 programsettings(JamWin *jw) {
 	GtkWidget *group;
-	GtkWidget *button, *hbox;
+	GtkWidget *button, *vbox, *hbox;
 	SettingsWidget *sw;
 	JamView *jv = jam_win_get_cur_view(jw);
-	
+
 	group = groupedbox_new_with_text(_("Programs"));
 	groupedbox_pack(GROUPEDBOX(group), sw_make("web_spawn"), FALSE);
 
-	groupedbox_pack(GROUPEDBOX(group), sw_make("music_command"), FALSE);
+	vbox = sw_make("music_command");
+	groupedbox_pack(GROUPEDBOX(group), vbox, FALSE);
 	sw = sw_lookup("music_command");
 	g_signal_connect_swapped(G_OBJECT(sw->widget), "changed",
+			G_CALLBACK(jam_view_settings_changed), jv);
+
+	button = sw_make("music_mpris");
+	groupedbox_pack(GROUPEDBOX(group), button, FALSE);
+	g_signal_connect(G_OBJECT(button), "toggled",
+			G_CALLBACK(mpris_update_cb), jdbus);
+	toggle_tie_disable(button, vbox);
+	g_signal_connect_swapped(G_OBJECT(button), "toggled",
 			G_CALLBACK(jam_view_settings_changed), jv);
 
 	button = gtk_button_new_with_mnemonic(_("_Diagnose"));
@@ -600,7 +658,7 @@ static GtkWidget*
 cfriends_general_settings(JamAccountLJ *acc) {
 	GtkWidget *general, *b, *w;
 	SettingsWidget *sw;
-	
+
 	general = groupedbox_new_with_text(_("General"));
 
 	groupedbox_pack(GROUPEDBOX(general), sw_make("cf_autostart"), FALSE);
@@ -633,11 +691,11 @@ cfriends_filter_settings(JamAccountLJ *acc) {
 	GtkWidget *filter, *maskhbox, *l;
 	SettingsWidget *sw;
 	LJUser *u = jam_account_lj_get_user(acc);
-	
+
 	filter = groupedbox_new_with_text(_("Filter"));
 
 	maskhbox = gtk_hbox_new(FALSE, 5);
-	gtk_box_pack_start(GTK_BOX(maskhbox), 
+	gtk_box_pack_start(GTK_BOX(maskhbox),
 			sw_make("cf_usemask"), FALSE, FALSE, 0);
 	sw = sw_lookup("cf_mask");
 	sw->conf = acc;
@@ -668,7 +726,7 @@ static GtkWidget*
 cfriends_indicators_settings(CFMgr *cfm) {
 	GtkWidget *indicators, *floaters, *b, *w;
 	SettingsWidget *sw;
-	
+
 	indicators = groupedbox_new_with_text(_("Indicators"));
 
 	b  = sw_make("cf_float");
@@ -680,7 +738,7 @@ cfriends_indicators_settings(CFMgr *cfm) {
 
 	floaters = groupedbox_new();
 	groupedbox_pack(GROUPEDBOX(indicators), floaters, FALSE);
-	
+
 	groupedbox_pack(GROUPEDBOX(floaters), sw_make("cf_floatraise"), FALSE);
 	b = sw_make("cf_float_decorate");
 	g_signal_connect(G_OBJECT(b), "toggled",
@@ -707,7 +765,7 @@ cfriendssettings(CFMgr *cfm) {
 	/* filter */
 	gtk_box_pack_start(GTK_BOX(vbox), cfriends_filter_settings(acc),
 			FALSE, FALSE, 0);
-	
+
 	/* indicators */
 	gtk_box_pack_start(GTK_BOX(vbox), cfriends_indicators_settings(cfm),
 			FALSE, FALSE, 0);
@@ -727,16 +785,16 @@ run_settings_dialog(JamWin *jw) {
 	/* the order of notebook pages created here should match the
 	 * SettingsPage enum in settings.h */
 	nb = gtk_notebook_new();
-	gtk_notebook_append_page(GTK_NOTEBOOK(nb), 
+	gtk_notebook_append_page(GTK_NOTEBOOK(nb),
 			uisettings(jw), gtk_label_new_with_mnemonic(_("Interface")));
 #ifndef G_OS_WIN32
-	gtk_notebook_append_page(GTK_NOTEBOOK(nb), 
+	gtk_notebook_append_page(GTK_NOTEBOOK(nb),
 			systemsettings(jw), gtk_label_new_with_mnemonic(_("System")));
 #endif /* G_OS_WIN32 */
 	if (JAM_ACCOUNT_IS_LJ(jw->account))
-		gtk_notebook_append_page(GTK_NOTEBOOK(nb), 
+		gtk_notebook_append_page(GTK_NOTEBOOK(nb),
 				cfriendssettings(app.cfmgr), gtk_label_new_with_mnemonic(_("Check Friends")));
-	gtk_notebook_append_page(GTK_NOTEBOOK(nb), 
+	gtk_notebook_append_page(GTK_NOTEBOOK(nb),
 			debugsettings(dlg), gtk_label_new_with_mnemonic(_("Debug")));
 
 	jam_dialog_set_contents(GTK_DIALOG(dlg), nb);
@@ -746,7 +804,7 @@ run_settings_dialog(JamWin *jw) {
 	 * so we let them rehide. */
 	{
 		SettingsWidget *sw;
-		for (sw = settingswidgets; sw->name; sw++) 
+		for (sw = settingswidgets; sw->name; sw++)
 			if (sw->type == SW_COMMAND)
 				command_changed_cb(GTK_OPTION_MENU(sw->widget), sw);
 	}
@@ -779,7 +837,7 @@ settings_run(JamWin *jw) {
 	gboolean hadquotes   = conf.options.smartquotes;
 
 	run_settings_dialog(jw);
-	
+
 	g_slist_foreach(app.secmgr_list, (GFunc)secmgr_security_set_force,
 			&conf.defaultsecurity);
 

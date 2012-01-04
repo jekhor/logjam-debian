@@ -86,7 +86,7 @@ static void
 timeout_enable(DateSel *ds, gboolean usenow) {
 	if (usenow && !ds->timeout_id) {
 		timeout_cb(ds);
-		ds->timeout_id = g_timeout_add(10*1000, /* every 10 sec. */ 
+		ds->timeout_id = g_timeout_add(10*1000, /* every 10 sec. */
 				(GSourceFunc)timeout_cb, ds);
 	} else if (!usenow && ds->timeout_id) {
 		g_source_remove(ds->timeout_id);
@@ -189,11 +189,11 @@ datesel_dialog_run(DateSel *ds) {
 	hbox = gtk_hbox_new(FALSE, 5);
 	label = gtk_label_new_with_mnemonic(_("_Time:"));
 	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
-	houradj = (GtkAdjustment*)gtk_adjustment_new(ds->date.tm_hour, 0, 23, 1, 4, 4);
+	houradj = (GtkAdjustment*)gtk_adjustment_new(ds->date.tm_hour, 0, 23, 1, 4, 0);
 	hourspin = gtk_spin_button_new(houradj, 1.0, 0);
 	gtk_label_set_mnemonic_widget(GTK_LABEL(label), hourspin);
 
-	minadj = (GtkAdjustment*)gtk_adjustment_new(ds->date.tm_min, 0, 59, 1, 10, 10);
+	minadj = (GtkAdjustment*)gtk_adjustment_new(ds->date.tm_min, 0, 59, 1, 10, 0);
 	minspin = gtk_spin_button_new(minadj, 1.0, 0);
 	gtk_spin_button_set_numeric(GTK_SPIN_BUTTON(minspin), TRUE);
 	g_signal_connect(G_OBJECT(minspin), "output",
@@ -217,12 +217,12 @@ datesel_dialog_run(DateSel *ds) {
 
 	check = gtk_check_button_new_with_mnemonic(_("Use _current date/time"));
 	g_signal_connect(G_OBJECT(check), "toggled",
-			G_CALLBACK(usenow_cb), datebox); 
+			G_CALLBACK(usenow_cb), datebox);
 
 	backdated = gtk_check_button_new_with_mnemonic(_("Entry is _backdated"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(backdated), ds->backdated);
 	g_signal_connect(G_OBJECT(backdated), "toggled",
-			G_CALLBACK(backdated_cb), ds); 
+			G_CALLBACK(backdated_cb), ds);
 
 	vbox = gtk_vbox_new(FALSE, 10);
 	gtk_box_pack_start(GTK_BOX(vbox), check, FALSE, FALSE, 0);

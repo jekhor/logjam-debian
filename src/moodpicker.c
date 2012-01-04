@@ -77,7 +77,7 @@ build_mood_tree(LJServer *server) {
 				mtparent->children, mtnew, mood_tree_compare);
 		g_hash_table_insert(moodtrees, &mtnew->mood->id, mtnew);
 	}
-	
+
 	g_hash_table_destroy(moodtrees);
 	mtbase->mood = NULL;
 	return mtbase;
@@ -131,8 +131,7 @@ mood_picker_run(GtkWindow *parent, JamHostLJ *host, int *moodid, char *moodtext)
 	GtkWidget *textentry, *textpicker, *scroll;
 	MoodTree *mt;
 
-	mt = NULL; // XXX blogger build_mood_tree(host->server);
-	build_mood_tree(NULL);
+	mt = build_mood_tree(jam_host_lj_get_server(host));
 
 	dlg = gtk_dialog_new_with_buttons(_("Current Mood"), parent,
 			GTK_DIALOG_MODAL,
@@ -155,7 +154,7 @@ mood_picker_run(GtkWindow *parent, JamHostLJ *host, int *moodid, char *moodtext)
 
 		textpicker = make_mood_picker(mt);
 		scroll = scroll_wrap(textpicker);
-		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), 
+		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
 				GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 		gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
 
@@ -175,7 +174,7 @@ mood_picker_run(GtkWindow *parent, JamHostLJ *host, int *moodid, char *moodtext)
 
 		/*iconpicker = make_mood_picker(mt);
 		scroll = scroll_wrap(iconpicker);
-		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), 
+		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
 				GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 		gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);*/
 

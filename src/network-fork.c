@@ -171,6 +171,7 @@ net_post_mainloop(const char *url, GSList *headers, GString *post,
 		GString *response;
 		GError *err = NULL;
 
+		if (!g_thread_supported ()) g_thread_init (NULL);
 		response = net_post_blocking(url, headers, post, fork_cb, &forkdata, &err);
 		if (response == NULL) {
 			int len = strlen(err->message);
@@ -185,9 +186,9 @@ net_post_mainloop(const char *url, GSList *headers, GString *post,
 		close(forkdata.pipefds[1]);
 
 		_exit(0);
-	} 
+	}
 	/* otherwise, we're the parent. */
-	forkdata.pipe_tag = gtk_input_add_full(forkdata.pipefds[0], GDK_INPUT_READ, 
+	forkdata.pipe_tag = gtk_input_add_full(forkdata.pipefds[0], GDK_INPUT_READ,
 			(GdkInputFunction)pipe_cb, NULL, &forkdata, NULL);
 	if (cb)
 		cb(NET_STATUS_BEGIN, &forkdata, data);

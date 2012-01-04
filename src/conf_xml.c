@@ -97,7 +97,7 @@ conf_parsedirxml(const char *dirname, void* (*fn)(xmlDocPtr, xmlNodePtr, void*),
 
 
 /* we use a bunch of macro magic to make this simpler.
- * (see xml_macros.h) 
+ * (see xml_macros.h)
  */
 
 /* this should match the enum in conf.h */
@@ -181,14 +181,18 @@ parseoptions(Configuration *c, xmlDocPtr doc, xmlNodePtr node) {
 #endif
 		READOPTION(revertusejournal)
 		READOPTION(autosave)
+		READOPTION(keepsaveddrafts)
 		READOPTION(cfautostart)
 		READOPTION(cfusemask)
+		READOPTION(close_when_send)
 		READOPTION(docklet)
+		READOPTION(start_in_dock)
 		READOPTION(cffloat)
 		READOPTION(cffloatraise)
 		READOPTION(friends_hidestats)
 		READOPTION(allowmultipleinstances)
 		READOPTION(smartquotes)
+		READOPTION(showloginhistory)
 
 		XML_GET_IF("showmeta", parseshowmeta(options, doc, node);)
 
@@ -238,7 +242,7 @@ parseconf(xmlDocPtr doc, xmlNodePtr node, void *data) {
 	char *hostspath;
 	Configuration *c = data;
 
-#define XML_GET_CONF(key, func) XML_GET_IF(key, func(c, doc, node);) 
+#define XML_GET_CONF(key, func) XML_GET_IF(key, func(c, doc, node);)
 	node = node->xmlChildrenNode;
 	for (; node != NULL; node = node->next) {
 		XML_GET_STR("currentserver", hostname)
@@ -254,6 +258,7 @@ parseconf(xmlDocPtr doc, xmlNodePtr node, void *data) {
 		XML_GET_CONF("proxyauth", parseproxyauth)
 		XML_GET_STR("spawncommand", c->spawn_command)
 		XML_GET_STR("musiccommand", c->music_command)
+		XML_GET_BOOL("musicmpris", c->music_mpris)
 #endif /* G_OS_WIN32 */
 		XML_GET_INT("cfuserinterval", c->cfuserinterval)
 		XML_GET_INT("cfthreshold", c->cfthreshold)
@@ -266,7 +271,7 @@ parseconf(xmlDocPtr doc, xmlNodePtr node, void *data) {
 #ifdef HAVE_GTKSPELL
 	if (!c->spell_language || strlen(c->spell_language) < 2) {
 		g_free(c->spell_language);
-		c->spell_language = g_strdup("en");
+		c->spell_language = g_strdup("en_US");
 	}
 #endif /* HAVE_GTKSPELL */
 	hostspath = g_build_filename(app.conf_dir, "servers", NULL);
@@ -323,14 +328,18 @@ writeoptions(Options *options, xmlNodePtr node) {
 #endif
 	WRITEOPTION(revertusejournal);
 	WRITEOPTION(autosave);
+	WRITEOPTION(keepsaveddrafts);
 	WRITEOPTION(cfautostart);
 	WRITEOPTION(cfusemask);
+	WRITEOPTION(close_when_send);
 	WRITEOPTION(docklet);
+	WRITEOPTION(start_in_dock);
 	WRITEOPTION(cffloatraise);
 	WRITEOPTION(cffloat);
 	WRITEOPTION(friends_hidestats);
 	WRITEOPTION(allowmultipleinstances);
 	WRITEOPTION(smartquotes);
+	WRITEOPTION(showloginhistory);
 
 	writeshowmeta(options, node);
 #endif /* HAVE_GTK */
@@ -390,6 +399,8 @@ conf_write(Configuration *c, char *base) {
 
 	if (c->music_command)
 		xmlAddTN(root, "musiccommand", c->music_command);
+	if (c->music_mpris)
+		xmlNewChild(root, NULL, BAD_CAST "musicmpris", NULL);
 #endif
 
 	if (c->cfuserinterval) {

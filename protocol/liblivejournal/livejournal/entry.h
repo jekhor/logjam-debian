@@ -40,6 +40,16 @@ typedef enum {
 	LJ_COMMENTS_DISABLE
 } LJCommentsType;
 
+/* --- screening --- */
+
+typedef enum {
+	LJ_SCREENING_DEFAULT,
+	LJ_SCREENING_NONE,
+	LJ_SCREENING_ANONYMOUS,
+	LJ_SCREENING_NONFRIENDS,
+	LJ_SCREENING_ALL
+} LJScreeningType;
+
 /* -- entry --- */
 
 typedef struct _LJEntry {
@@ -52,10 +62,11 @@ typedef struct _LJEntry {
 	char *event;
 
 	int moodid;  /* a moodid is only meaningful in the context of a particular LJServer. */
-	char *mood, *music, *taglist, *pickeyword;
+	char *mood, *music, *location, *taglist, *pickeyword;
 	gboolean preformatted;
 	gboolean backdated;
 	LJCommentsType comments;
+	LJScreeningType screening;
 
 	struct tm time;
 	LJSecurity security;

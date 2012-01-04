@@ -25,12 +25,13 @@ net_post_blocking(const char *url, GSList *headers, GString *post,
 	gboolean success = FALSE;
 	int len;
 	NetStatusProgress progress;
+	gchar *user_agent;
 
-	if (conf.options.netdump && post) 
+	if (conf.options.netdump && post)
 		fprintf(stderr, _("Request: [%s]\n"), post->str);
 
 	xmlNanoHTTPInit();
-	
+
 	if (conf.options.useproxy) {
 		if (conf.proxyuser) {
 			g_set_error(err, NET_ERROR, NET_ERROR_GENERIC,
@@ -44,16 +45,22 @@ net_post_blocking(const char *url, GSList *headers, GString *post,
 		xmlNanoHTTPScanProxy(NULL);
 	}
 
+	user_agent = g_strdup_printf("User-Agent: %s\r\n", LOGJAM_USER_AGENT);
 	if (headers) {
 		GString *hs = g_string_new(NULL);
 		GSList *l;
+		g_string_append(hs, user_agent);
 		for (l = headers; l; l = l->next) {
 			g_string_append(hs, l->data);
 			g_string_append(hs, "\r\n");
 		}
 		headerstr = hs->str;
 		g_string_free(hs, FALSE);
+		g_free(user_agent);
+	} else {
+		headerstr = user_agent;
 	}
+
 	if (post)
 		ctx = xmlNanoHTTPMethod(url, "POST",
 				post->str, NULL, headerstr, post->len);
@@ -99,7 +106,7 @@ net_post_blocking(const char *url, GSList *headers, GString *post,
 
 	success = TRUE;
 
-	if (conf.options.netdump) 
+	if (conf.options.netdump)
 		fprintf(stderr, _("Response: [%s]\n"), response->str);
 
 out:

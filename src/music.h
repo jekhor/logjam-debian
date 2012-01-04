@@ -8,11 +8,17 @@
 #define music_h
 
 #include "conf.h" /* CommandList */
+#include "lj_dbus.h"
+
+extern JamDBus *jdbus;
 
 typedef enum {
 	MUSIC_SOURCE_NONE,
-	MUSIC_SOURCE_XMMS,
+	MUSIC_SOURCE_BANSHEE,
+	MUSIC_SOURCE_MPD,
 	MUSIC_SOURCE_RHYTHMBOX,
+	MUSIC_SOURCE_XMMS,
+	MUSIC_SOURCE_AMAROK,
 	MUSIC_SOURCE_CUSTOM,
 	MUSIC_SOURCE_COUNT
 } MusicSource;

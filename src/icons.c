@@ -35,7 +35,7 @@ inline_to_listpixbuf(const guint8 *data) {
 
 	spb = gdk_pixbuf_scale_simple(pb, width, height, GDK_INTERP_BILINEAR);
 	g_object_unref(pb);
-	
+
 	return spb;
 }
 GdkPixbuf*
@@ -79,6 +79,7 @@ icons_initialize(void) {
 	add(factory, logjam_pencil, "logjam-server");
 	add(factory, logjam_ljuser, "logjam-ljuser");
 	add(factory, logjam_ljcomm, "logjam-ljcomm");
+	add(factory, logjam_twuser, "logjam-twuser");
 	add(factory, logjam_protected, "logjam-protected");
 	add(factory, logjam_private, "logjam-private");
 	add(factory, logjam_blogger, "logjam-blogger");

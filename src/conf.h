@@ -51,6 +51,7 @@ typedef struct {
 	gboolean autosave;
 	gboolean cfautostart;
 	gboolean cfusemask;
+	gboolean close_when_send;
 	gboolean docklet;
 	gboolean cffloat;
 	gboolean cffloatraise;
@@ -58,7 +59,10 @@ typedef struct {
 	gboolean friends_hidestats;
 	gboolean allowmultipleinstances;
 	gboolean smartquotes;
+	gboolean showloginhistory;
 	gboolean showmeta[JAM_VIEW_META_COUNT];
+	gboolean start_in_dock;
+	gboolean keepsaveddrafts;
 #endif /* HAVE_GTK */
 } Options;
 
@@ -89,6 +93,7 @@ typedef struct {
 	char *spawn_command;
 
 	char *music_command;
+	gboolean music_mpris;
 
 	char *proxy;
 	char *proxyuser, *proxypass;

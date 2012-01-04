@@ -19,6 +19,8 @@
 #include "security.h"
 #include "marshalers.h"
 #include "datesel.h"
+#include "tags.h"
+#include "lj_dbus.h"
 
 #define KEY_PICTUREKEYWORD "logjam-picturekeyword"
 
@@ -42,6 +44,9 @@ struct _JamView {
 	GtkWidget *musicbar;
 	GtkWidget *musicbutton, *music;
 
+	GtkWidget *locationbar;
+	GtkWidget *location;
+
 	GtkWidget *tagsbar;
 	GtkWidget *tags;
 
@@ -51,6 +56,7 @@ struct _JamView {
 	GtkWidget *preformatted;
 	GtkWidget *datesel;
 	GtkWidget *commentsbox, *comments;
+	GtkWidget *screeningbox, *screening;
 
 	GtkSizeGroup *sizegroup;
 	UndoMgr *undomgr;
@@ -227,7 +233,7 @@ mood_add(JamView *view) {
 	view->moodcombo = gtk_combo_new();
 	gtk_widget_set_usize(GTK_COMBO(view->moodcombo)->entry, 100, -1);
 	mood_populate(view);
-	
+
 	/*view->moodbox = gtk_hbox_new(FALSE, 12);
 	gtk_box_pack_start(GTK_BOX(view->moodbox), view->moodbutton, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(view->moodbox), view->moodcombo, TRUE, TRUE, 0);*/
@@ -355,7 +361,12 @@ picture_store(JamView *view) {
 static void
 music_refresh_cb(JamView *view) {
 	GError *err = NULL;
-	gchar *music = music_detect(&err);
+	gchar *music;
+
+	if (conf.music_mpris)
+		music = lj_dbus_mpris_current_music(jdbus, &err);
+	else
+		music = music_detect(&err);
 
 	if (music) {
 		gtk_entry_set_text(GTK_ENTRY(view->music), music);
@@ -372,7 +383,7 @@ static void
 music_add(JamView *view) {
 	view->music = gtk_entry_new();
 	view->musicbar = labelled_box_new_sg(_("_Music:"), view->music, view->sizegroup);
-	if (music_can_detect(NULL)) {
+	if (conf.music_mpris || music_can_detect(NULL)) {
 		GtkWidget *refresh = gtk_button_new_from_stock(GTK_STOCK_REFRESH);
 		g_signal_connect_swapped(G_OBJECT(refresh), "clicked",
 				G_CALLBACK(music_refresh_cb), view);
@@ -408,11 +419,68 @@ music_store(JamView *view) {
 	jam_doc_set_music(view->doc, music);
 }
 
+static void tags_store(JamView *view);
+
+static void
+tags_select_cb(JamView *view) {
+  gchar *tags;
+  GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(view));
+
+  tags = tags_dialog(toplevel,
+		     JAM_ACCOUNT_LJ(view->account),
+		     jam_doc_get_usejournal(view->doc),
+		     (gchar *) gtk_entry_get_text(GTK_ENTRY(view->tags)));
+
+  if (tags) {
+      gtk_entry_set_text(GTK_ENTRY(view->tags), tags);
+      tags_store(view);
+  }
+}
+
+static void
+location_add(JamView *view) {
+	view->location = gtk_entry_new();
+	view->locationbar = labelled_box_new_sg(_("_Location:"), view->location, view->sizegroup);
+	gtk_box_pack_start(GTK_BOX(view), view->locationbar, FALSE, FALSE, 0);
+	gtk_box_reorder_child(GTK_BOX(view), view->locationbar, view->moodpicbar ? 2 : 1);
+	gtk_widget_show_all(view->locationbar);
+}
+static void
+location_remove(JamView *view) {
+	jam_doc_set_location(view->doc, NULL);
+	gtk_widget_destroy(view->locationbar);
+	view->locationbar = view->location = NULL;
+}
+static gboolean
+location_visible(JamView *view) {
+	return view->locationbar != NULL;
+}
+static void
+location_load(JamView *view) {
+	const char *location = jam_doc_get_location(view->doc);
+	if (location)
+		show_meta(view, JAM_VIEW_LOCATION);
+	if (location_visible(view))
+		gtk_entry_set_text(GTK_ENTRY(view->location), location ? location : "");
+}
+static void
+location_store(JamView *view) {
+	const char *location = gtk_entry_get_text(GTK_ENTRY(view->location));
+	if (location[0] == 0) location = NULL;
+	jam_doc_set_location(view->doc, location);
+}
+
 static void
 tags_add(JamView *view) {
+	GtkWidget *tagbutton;
 	view->tags = gtk_entry_new();
 	view->tagsbar = labelled_box_new_sg(_("_Tags:"), view->tags, view->sizegroup);
 	gtk_box_pack_start(GTK_BOX(view), view->tagsbar, FALSE, FALSE, 0);
+	tagbutton = gtk_button_new_with_label("...");
+	g_signal_connect_swapped(G_OBJECT(tagbutton), "clicked",
+				 G_CALLBACK(tags_select_cb), view);
+	gtk_box_pack_start(GTK_BOX(view->tagsbar),
+			   tagbutton, FALSE, FALSE, 0);
 	gtk_box_reorder_child(GTK_BOX(view), view->tagsbar, view->musicbar ? 2 : 1);
 	gtk_widget_show_all(view->tagsbar);
 }
@@ -454,7 +522,8 @@ static void
 option_remove(JamView *view) {
 	if (!view->optionbar)
 		return;
-	if (view->preformatted || view->datesel || view->commentsbox)
+	if (view->preformatted || view->datesel || view->commentsbox ||
+			view->screeningbox)
 		return;
 	gtk_widget_destroy(view->optionbar);
 	view->optionbar = NULL;
@@ -515,7 +584,7 @@ comments_add(JamView *view) {
 	gtk_option_menu_set_menu(GTK_OPTION_MENU(view->comments), menu);
 
 	view->commentsbox = labelled_box_new(_("_Comments:"), view->comments);
-	gtk_box_pack_end(GTK_BOX(view->optionbar), view->commentsbox, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(view->optionbar), view->commentsbox, FALSE, FALSE, 0);
 	gtk_widget_show_all(view->commentsbox);
 }
 static void
@@ -543,6 +612,58 @@ comments_store(JamView *view) {
 	jam_doc_set_comments(view->doc, type);
 }
 
+static void
+screening_add(JamView *view) {
+	GtkWidget *menu, *item;
+	static const char * items[] = {
+		N_("Default"),
+		N_("None"),
+		N_("Anonymous Only"),
+		N_("Non-Friends"),
+		N_("All")
+	};
+	int i;
+
+	option_add(view);
+	view->screening = gtk_option_menu_new();
+
+	menu = gtk_menu_new();
+	for (i = 0; i < sizeof(items)/sizeof(char*); i++) {
+		item = gtk_menu_item_new_with_label(_(items[i]));
+		gtk_widget_show(item);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	}
+	gtk_option_menu_set_menu(GTK_OPTION_MENU(view->screening), menu);
+
+	view->screeningbox = labelled_box_new(_("Scr_eening:"), view->screening);
+	gtk_box_pack_end(GTK_BOX(view->optionbar), view->screeningbox, FALSE, FALSE, 0);
+	gtk_widget_show_all(view->screeningbox);
+}
+static void
+screening_remove(JamView *view) {
+	jam_doc_set_screening(view->doc, LJ_SCREENING_DEFAULT);
+	gtk_widget_destroy(view->screeningbox);
+	view->screeningbox = view->screening = NULL;
+	option_remove(view);
+}
+static gboolean
+screening_visible(JamView *view) {
+	return view->screeningbox != NULL;
+}
+static void
+screening_load(JamView *view) {
+	LJCommentsType type = jam_doc_get_screening(view->doc);
+	if (type != LJ_SCREENING_DEFAULT)
+		show_meta(view, JAM_VIEW_SCREENING);
+	if (screening_visible(view))
+		gtk_option_menu_set_history(GTK_OPTION_MENU(view->screening), type);
+}
+static void
+screening_store(JamView *view) {
+	LJCommentsType type = gtk_option_menu_get_history(GTK_OPTION_MENU(view->screening));
+	jam_doc_set_screening(view->doc, type);
+}
+
 static struct {
 	char *name;
 	gboolean lj_only;
@@ -565,10 +686,12 @@ static struct {
 	{ "mood",         TRUE, STD(mood),         mood_account_changed     },
 	{ "picture",      TRUE, STD(picture),      picture_account_changed  },
 	{ "music",        TRUE, STD(music),        NULL },
+	{ "location",     TRUE, STD(location),     NULL },
 	{ "tags",         TRUE, STD(tags),         NULL },
 	{ "preformatted", TRUE, STD(preformatted), NULL },
 	{ "datesel",      TRUE, STD(datesel),      NULL },
 	{ "comments",     TRUE, STD(comments),     NULL },
+	{ "screening",    TRUE, STD(screening),    NULL },
 	{ 0 }
 };
 
@@ -665,7 +788,7 @@ populate_entry_popup(GtkTextView *text, GtkMenu *menu, JamView *view) {
 			G_CALLBACK(redo_cb), view);
 	gtk_menu_shell_prepend(GTK_MENU_SHELL(menu), menu_item);
 	gtk_widget_show(menu_item);
-	
+
 	menu_item = gtk_image_menu_item_new_from_stock(GTK_STOCK_UNDO, NULL);
 	gtk_widget_set_sensitive(menu_item,
 			undomgr_can_undo(view->undomgr));
@@ -804,7 +927,9 @@ jam_view_set_doc(JamView *view, JamDoc *doc) {
 		GError *err = NULL;
 		if (gtkspell_new_attach(GTK_TEXT_VIEW(view->entry),
 					conf.spell_language, &err) == NULL) {
-			jam_warning(NULL, // XXX GTK_WINDOW(view->jw),
+			GtkWindow *toplevel;
+			toplevel = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+			jam_warning(toplevel,
 					_("GtkSpell error: %s"), err->message);
 			g_error_free(err);
 		}
@@ -816,26 +941,32 @@ jam_view_set_doc(JamView *view, JamDoc *doc) {
 
 void
 jam_view_settings_changed(JamView *view) {
-#if 0
-	XXX make this work
 #ifdef HAVE_GTKSPELL
-	if (conf.options.usespellcheck != hadspell) {
-		GtkSpell *spell;
-		if (conf.options.usespellcheck) {
+	GtkSpell *spell;
+	GError *err = NULL;
+	spell = gtkspell_get_from_text_view(GTK_TEXT_VIEW(view->entry));
+	if (conf.options.usespellcheck) {
+		GtkWindow *toplevel;
+		toplevel = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+		if (spell) {
+			if (!gtkspell_set_language(spell, conf.spell_language, &err)) {
+				jam_warning(toplevel,
+						_("GtkSpell error: %s"), err->message);
+				g_error_free(err);
+			}
+		} else {
 			GError *err = NULL;
-			if (gtkspell_new_attach(GTK_TEXT_VIEW(fetcheentry(jw)), conf.spell_language , &err) == NULL) {
-				jam_warning(GTK_WINDOW(jw),
+			if (gtkspell_new_attach(GTK_TEXT_VIEW(view->entry), conf.spell_language , &err) == NULL) {
+				jam_warning(toplevel,
 						_("GtkSpell error: %s"), err->message);
 				conf.options.usespellcheck = FALSE;
 				g_error_free(err);
 			}
-		} else {
-			spell = gtkspell_get_from_text_view(GTK_TEXT_VIEW(fetcheentry(jw)));
-			if (spell)
-				gtkspell_detach(spell);
 		}
+	} else {
+		if (spell)
+			gtkspell_detach(spell);
 	}
-#endif
 #endif
 	if (conf.uifont)
 		jam_widget_set_font(view->entry, conf.uifont);

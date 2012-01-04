@@ -1,7 +1,9 @@
 AC_PREREQ(2.52)
-AC_INIT(logjam, 4.5.3, evan@livejournal.com)
+AC_INIT(logjam, 4.6.2, evan@livejournal.com)
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_CONFIG_SRCDIR(src/jam.c)
 AM_CONFIG_HEADER(config.h)
 
@@ -13,6 +15,8 @@ AC_PROG_INTLTOOL
 AC_CACHE_SAVE
 
 AC_CHECK_HEADERS([regex.h])
+
+AC_CHECK_LIB(X11, XFlush)
 
 dnl Check for gettext.
 GETTEXT_PACKAGE=logjam
@@ -63,7 +67,7 @@ LJ_PKG_ARG_WITH(sqlite3, [SQLITE3],
 LJ_PKG_ARG_WITH(libsoup, [LIBSOUP],
   AC_HELP_STRING([--with-libsoup],
                  [use libsoup network backend]),
-  libsoup-2.2)
+  libsoup-2.4)
 
 AC_MSG_CHECKING(whether to use gtk)
 if test "$with_gtk" = "yes" ; then
@@ -74,25 +78,35 @@ if test "$with_gtk" = "yes" ; then
                    [compile with GtkSpell support (default autodetect)]),
     gtkspell-2.0)
 
-  LJ_PKG_ARG_WITH(gtkhtml36, GTKHTML36,
-    AC_HELP_STRING([--with-gtkhtml36],
-                   [compile with GtkHtml3.6 support (default autodetect)]),
-    libgtkhtml-3.6)
-  if test "$with_gtkhtml36" = "yes"; then
-    with_gtkhtml="3.6"
+  dnl This is kind of silly? The API doesn't seem to have changed enough
+  dnl to warrant different module versions, yet here they are.
+  LJ_PKG_ARG_WITH(gtkhtml314, GTKHTML,
+    AC_HELP_STRING([--with-gtkhtml314],
+                   [compile with GtkHtml3.14 support (default autodetect)]),
+    libgtkhtml-3.14)
+  if test "$with_gtkhtml314" = "yes"; then
+    with_gtkhtml="3.14"
   else
-    LJ_PKG_ARG_WITH(gtkhtml30, GTKHTML30,
-      AC_HELP_STRING([--with-gtkhtml30],
-                     [compile with GtkHtml3.0 support (default autodetect)]),
-      libgtkhtml-3.0)
-    if test "$with_gtkhtml30" = "yes"; then
-      with_gtkhtml="3.0"
+    LJ_PKG_ARG_WITH(gtkhtml36, GTKHTML,
+      AC_HELP_STRING([--with-gtkhtml36],
+                     [compile with GtkHtml3.6 support (default autodetect)]),
+      libgtkhtml-3.6)
+    if test "$with_gtkhtml36" = "yes"; then
+      with_gtkhtml="3.6"
     else
-      with_gtkhtml="no"
+      LJ_PKG_ARG_WITH(gtkhtml30, GTKHTML,
+        AC_HELP_STRING([--with-gtkhtml30],
+                       [compile with GtkHtml3.0 support (default autodetect)]),
+        libgtkhtml-3.0)
+      if test "$with_gtkhtml30" = "yes"; then
+        with_gtkhtml="3.0"
+      else
+        with_gtkhtml="no"
+      fi
     fi
-  fi
-  if test "$with_gtkhtml" != "no"; then
-    AC_DEFINE(HAVE_GTKHTML,1,[do we have a gtkhtml?])
+    if test "$with_gtkhtml" != "no"; then
+      AC_DEFINE(HAVE_GTKHTML,1,[do we have a gtkhtml?])
+    fi
   fi
 
   LJ_PKG_ARG_WITH(librsvg, LIBRSVG,
@@ -197,12 +211,25 @@ fi
 AC_SUBST(XMMS_LIBS)
 AC_SUBST(XMMS_CFLAGS)
 
+AC_ARG_WITH(banshee,
+  AC_HELP_STRING([--with-banshee], [build banshee helper (default no)]),
+  , [with_banshee=no])
+
+AM_CONDITIONAL(WITH_BANSHEE, test "$with_banshee" = "yes")
+
 dnl liblivejournal dependencies.
 MODULES="glib-2.0 gobject-2.0 libxml-2.0"
 PKG_CHECK_MODULES(LIVEJOURNAL, $MODULES)
 AC_SUBST(LIVEJOURNAL_CFLAGS)
 AC_SUBST(LIVEJOURNAL_LIBS)
 dnl end liblivejournal dependencies.
+
+dnl D-Bus API
+MODULES="dbus-1 dbus-glib-1"
+PKG_CHECK_MODULES(DBUSAPI, $MODULES)
+AC_SUBST(DBUSAPI_CFLAGS)
+AC_SUBST(DBUSAPI_LIBS)
+dnl D-Bus API
 
 AM_CONDITIONAL(WITH_XMMS, test "$with_xmms" = "yes")
 AM_CONDITIONAL(WITH_HTML, test "$with_gtkhtml" != "no")
@@ -216,6 +243,7 @@ AC_CONFIG_SUBDIRS(protocol/liblivejournal)
 AC_CONFIG_FILES([Makefile po/Makefile.in
 doc/Makefile data/Makefile images/Makefile
 util/Makefile util/xmmsclient/Makefile
+util/bansheeclient/Makefile
 protocol/Makefile
 src/Makefile])
 AC_OUTPUT
@@ -240,6 +268,7 @@ if test "$network_backend" = "libxml"; then
   echo "        If you need these features, you must build with Curl."
 fi
 echo "    - XMMS helper: ${with_xmms}"
+echo "    - Banshee helper: ${with_banshee}"
 echo "    - SQLite3: ${with_sqlite3}"
 echo ""
 

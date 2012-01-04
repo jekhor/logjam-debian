@@ -17,6 +17,7 @@ typedef struct {
 	gunichar c;
 	char *escaped;
 } htmlescape;
+
 htmlescape htmlescapes[] = {
 	{ '<', "&lt;" },
 	{ '>', "&gt;" },
@@ -46,7 +47,7 @@ tools_html_escape(GtkWindow *win, JamDoc *doc) {
 
 	gtk_text_buffer_begin_user_action(buffer); /* atomic, in terms of undo */
 
-	for (pos = start; 
+	for (pos = start;
 			gtk_text_iter_in_range(&pos, &start, &end);
 			gtk_text_iter_forward_char(&pos)) {
 		c = gtk_text_iter_get_char(&pos);
@@ -64,7 +65,7 @@ tools_html_escape(GtkWindow *win, JamDoc *doc) {
 
 		/* to counteract the pos++ in the for loop */
 		gtk_text_iter_backward_char(&pos);
-		
+
 		/* changing the buffer invalidates this iterator */
 		gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
 	}
@@ -90,13 +91,13 @@ tools_remove_linebreaks(GtkWindow *win, JamDoc *doc) {
 				_("When you paste text into LogJam, linebreaks from the original are preserved, and will normally show up in your post on the server. You can have LogJam remove extraneous linebreaks from your entry, but you must make a specific selection of the text you wish this to happen on first.\n\nNote that you can also use the \"don't autoformat\" option on your post."));
 		return;
 	}
- 
+
 	gtk_text_buffer_begin_user_action(buffer); /* atomic, in terms of undo */
 
-	for (pos = start; 
+	for (pos = start;
 			gtk_text_iter_in_range(&pos, &start, &end);
 			gtk_text_iter_forward_char(&pos)) {
-		
+
 		/* we remove linebreaks as we see them; but later we will
 		 * make up for our deletions by inserting spaces or \n\ns
 		 * as appropriate. */
@@ -113,9 +114,9 @@ tools_remove_linebreaks(GtkWindow *win, JamDoc *doc) {
 
 			continue;
 		}
-		
+
 		leading = FALSE;
-		
+
 		/* make up for what we removed, according to how long a run
 		 * it was. */
 		if (nlrun == 1) { /* line separators turn into a space */
@@ -125,7 +126,7 @@ tools_remove_linebreaks(GtkWindow *win, JamDoc *doc) {
 		} else if (nlrun > 1) { /* paragraph breaks are normalized */
 			nlrun = 0;
 			gtk_text_buffer_insert(buffer, &pos, "\n\n", 2);
-			
+
 			/* this is safe, since we've just added two characters. */
 			gtk_text_iter_forward_chars(&pos, 2);
 
@@ -135,7 +136,7 @@ tools_remove_linebreaks(GtkWindow *win, JamDoc *doc) {
 
 	gtk_text_buffer_move_mark_by_name(buffer, "insert", &end);
 	gtk_text_buffer_move_mark_by_name(buffer, "selection_bound", &end);
-	
+
 	gtk_text_buffer_end_user_action(buffer);
 }
 
@@ -206,7 +207,7 @@ tools_insert_command_output(GtkWindow *win, JamDoc *doc) {
 	gtk_window_set_transient_for(GTK_WINDOW(cmd_dlg), win);
 
 	entry = gtk_entry_new();
-	
+
 	box = labelled_box_new(_("_Command:"), entry);
 	jam_dialog_set_contents(GTK_DIALOG(cmd_dlg), box);
 	gtk_widget_grab_focus(entry);
@@ -215,7 +216,7 @@ tools_insert_command_output(GtkWindow *win, JamDoc *doc) {
 
 	while (gtk_dialog_run(GTK_DIALOG(cmd_dlg)) == GTK_RESPONSE_OK) {
 		const gchar *command;
-		const gchar *encoding;
+		const gchar *encoding = 0;
 		GError *err = NULL;
 
 		command = gtk_entry_get_text(GTK_ENTRY(entry));
@@ -243,7 +244,7 @@ tools_insert_command_output(GtkWindow *win, JamDoc *doc) {
  *
  * the ideal solution would be for libxml to use GError to report
  * errors and then I wouldn't need any of this.
- */ 
+ */
 static GString *xml_error_context_hack;
 void
 xmlErrFunc(void *ctx, const char *msg, ...) {
@@ -283,7 +284,7 @@ xml_error_dialog(GtkWindow *parent, GString *errstr) {
 static gboolean
 validate_xml(GtkWindow *parent, char *text) {
 	xmlParserCtxtPtr ctxt = xmlCreateDocParserCtxt(BAD_CAST text);
-	
+
 	xml_error_context_hack = g_string_new(NULL);
 	xmlSetGenericErrorFunc(ctxt, xmlErrFunc);
 	if (xmlParseDocument(ctxt) < 0) {
@@ -322,14 +323,97 @@ tools_validate_xml(GtkWindow *win, JamDoc *doc) {
 	g_free(str);
 }
 
+/* FIXME: These two functions are practically identical. Abstract them to minimize code duplication. */
+
+static void
+tools_insert_tag(GtkTextBuffer *buffer, char *tag, char *arg,
+			char *text, char *body, gboolean full) {
+	char *inset;
+	char *inl = (full && (!body || !*body)) ? " /" : "";
+
+	if (text) {
+		inset = g_strdup_printf("<%s %s=\"%s\"%s>", tag, arg, text, inl);
+	} else {
+		inset = g_strdup_printf("<%s%s>", tag, inl);
+	}
+	gtk_text_buffer_insert_at_cursor(buffer, inset, -1);
+	g_free(inset);
+
+	if (body && *body) {
+		gtk_text_buffer_insert_at_cursor(buffer, body, -1);
+
+		if (full) {
+			inset = g_strdup_printf("</%s>", tag);
+			gtk_text_buffer_insert_at_cursor(buffer, inset, -1);
+			g_free(inset);
+		}
+	}
+}
+
 void
-tools_ljcut(GtkWindow *win, JamDoc *doc) {
+tools_embedded_media(GtkWindow *win, JamDoc *doc) {
+	GtkTextBuffer *buffer, *new_buffer;
+	GtkWidget *dlg, *vbox, *hbox, *label, *entry;
+	gchar *text;
+	GtkTextIter start;
+	GtkTextIter end;
+
+	dlg = gtk_dialog_new_with_buttons(_("Embedded Media"), win,
+			GTK_DIALOG_MODAL,
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK,     GTK_RESPONSE_OK,
+			NULL);
+	gtk_dialog_set_default_response(GTK_DIALOG(dlg), GTK_RESPONSE_OK);
+	gtk_window_set_default_size (GTK_WINDOW (dlg), 450, 140);
+
+	vbox = gtk_vbox_new(FALSE, 2);
+	gtk_container_set_border_width(GTK_CONTAINER(vbox), 10);
+
+	entry = gtk_text_view_new();
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(entry), TRUE);
+	hbox = labelled_box_new(_("E_mbedded code:"), entry);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
+
+	label = gtk_label_new(NULL);
+	gtk_label_set_markup(GTK_LABEL(label),
+			_("<small>This is where you paste the embedded code, e.g. for a YouTube video.</small>"));
+	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
+
+	jam_dialog_set_contents(GTK_DIALOG(dlg), vbox);
+
+	if (gtk_dialog_run(GTK_DIALOG(dlg)) != GTK_RESPONSE_OK) {
+		gtk_widget_destroy(dlg);
+		return;
+	}
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(entry));
+	gtk_text_buffer_get_start_iter (buffer, &start);
+	gtk_text_buffer_get_end_iter (buffer, &end);
+	text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+	gtk_widget_destroy(dlg);
+	if (text[0] == 0) {
+		g_free(text);
+		text = NULL;
+	}
+	new_buffer = jam_doc_get_text_buffer(doc);
+
+	gtk_text_buffer_begin_user_action(new_buffer); /* start undo action */
+	tools_insert_tag(new_buffer, "lj-embed", NULL, NULL, text, TRUE);
+	g_free(text);
+
+	gtk_text_buffer_end_user_action(new_buffer);
+}
+
+static void
+tools_lj_macro(GtkWindow *win, JamDoc *doc, char *tag, char *arg,
+			char *lname, char *tip, char *dname, gboolean full, gboolean ignsel) {
 	GtkTextBuffer *buffer;
 	GtkTextIter start, end;
 	GtkWidget *dlg, *vbox, *hbox, *label, *entry;
-	char *text;
+	char *text, *inset;
+	char *tip_text = (tip && *tip) ? tip : _("<small>If left empty, "
+			"the LiveJournal default will be used.</small>");
 
-	dlg = gtk_dialog_new_with_buttons(_("LJ-Cut"), win,
+	dlg = gtk_dialog_new_with_buttons(dname, win,
 			GTK_DIALOG_MODAL,
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK,     GTK_RESPONSE_OK,
@@ -341,13 +425,11 @@ tools_ljcut(GtkWindow *win, JamDoc *doc) {
 
 	entry = gtk_entry_new();
 	gtk_entry_set_activates_default(GTK_ENTRY(entry), TRUE);
-	hbox = labelled_box_new(_("Cut c_aption:"), entry);
+	hbox = labelled_box_new(lname, entry);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
 
 	label = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(label),
-			_("<small>If left empty, the LiveJournal default "
-				"will be used.</small>"));
+	gtk_label_set_markup(GTK_LABEL(label), tip_text);
 	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
 
 	jam_dialog_set_contents(GTK_DIALOG(dlg), vbox);
@@ -363,33 +445,50 @@ tools_ljcut(GtkWindow *win, JamDoc *doc) {
 		text = NULL;
 	}
 	xml_escape(&text);
-	
+
 	buffer = jam_doc_get_text_buffer(doc);
 
 	gtk_text_buffer_begin_user_action(buffer); /* start undo action */
-	if (!gtk_text_buffer_get_selection_bounds(buffer, &start, &end)) {
-		if (text) {
-			gtk_text_buffer_insert_at_cursor(buffer, "<lj-cut text=\"", -1);
-			gtk_text_buffer_insert_at_cursor(buffer, text, -1);
-			gtk_text_buffer_insert_at_cursor(buffer, "\">", -1);
-		} else {
-			gtk_text_buffer_insert_at_cursor(buffer, "<lj-cut>", -1);
-		}
+	if (ignsel || !gtk_text_buffer_get_selection_bounds(buffer, &start, &end)) {
+		tools_insert_tag(buffer, tag, arg, text, NULL, full);
 	} else {
 		if (text) {
-			gtk_text_buffer_insert(buffer, &start, "<lj-cut text=\"", -1);
-			gtk_text_buffer_insert(buffer, &start, text, -1);
-			gtk_text_buffer_insert(buffer, &start, "\">", -1);
+			inset = g_strdup_printf("<%s %s=\"%s\">", tag, arg, text);
 		} else {
-			gtk_text_buffer_insert(buffer, &start, "<lj-cut>", -1);
+			inset = g_strdup_printf("<%s>", tag);
 		}
+		gtk_text_buffer_insert(buffer, &start, inset, -1);
+		g_free(inset);
+
 		gtk_text_buffer_get_selection_bounds(buffer, &start, &end);
-		gtk_text_buffer_insert(buffer, &end, "</lj-cut>", -1);
+
+		inset = g_strdup_printf("</%s>", tag);
+		gtk_text_buffer_insert(buffer, &end, inset, -1);
+		g_free(inset);
+
 		gtk_text_buffer_move_mark_by_name(buffer, "insert", &end);
 		gtk_text_buffer_move_mark_by_name(buffer, "selection_bound", &end);
 	}
 	g_free(text);
 
 	gtk_text_buffer_end_user_action(buffer);
+}
+
+void
+tools_ljcut(GtkWindow *win, JamDoc *doc) {
+	return tools_lj_macro(win, doc, "lj-cut", "text",
+			_("Cut c_aption:"), NULL, _("LJ-Cut"), FALSE, FALSE);
+}
+
+void
+tools_lj_repost(GtkWindow *win, JamDoc *doc) {
+	return tools_lj_macro(win, doc, "lj-repost", "button",
+			_("Repost _button:"), NULL, _("LJ-Repost"), TRUE, FALSE);
+}
+
+void
+tools_lj_like(GtkWindow *win, JamDoc *doc) {
+	return tools_lj_macro(win, doc, "lj-like", "buttons",
+			_("_Like for:"), NULL, _("LJ-Like"), TRUE, TRUE);
 }
 

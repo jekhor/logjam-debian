@@ -17,6 +17,7 @@
 typedef struct {
 	GtkWidget *dlg;
 	GtkWidget *etext, *ruser, *euser, *rurl, *eurl;
+	GtkWidget *titl;
 	JamDoc *doc;
 	gint sel_type, clip_type;
 	gchar *sel_input, *clip_input;
@@ -56,7 +57,7 @@ radio_option(GSList *g, GtkWidget **radio, GtkWidget **entry,
 
 	if (label) {
 		GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
-		gtk_box_pack_start(GTK_BOX(hbox), 
+		gtk_box_pack_start(GTK_BOX(hbox),
 				gtk_label_new(label),
 				FALSE, FALSE, 0);
 		gtk_box_pack_start(GTK_BOX(hbox), *entry, TRUE, TRUE, 0);
@@ -81,7 +82,7 @@ link_magic(LinkRequest *lr) {
 	gchar *a, *b;
 	if (! ((lr->clip_type | lr->sel_type) & JAM_SELECTION_HAS_URL))
 		return NULL;
-	
+
 	xml_escape(&lr->clip_input);
 
 	/* boo for no list primitives in c */
@@ -98,7 +99,7 @@ link_magic(LinkRequest *lr) {
 static void
 make_link_dialog(LinkDialog *ld, GtkWindow *win, gboolean livejournal) {
 	GtkWidget *vbox;
-	GtkWidget *subbox;
+	GtkWidget *subbox, *hhr;
 	GSList *rgroup;
 
 	ld->dlg = gtk_dialog_new_with_buttons(_("Make Link"),
@@ -114,16 +115,19 @@ make_link_dialog(LinkDialog *ld, GtkWindow *win, gboolean livejournal) {
 	gtk_entry_set_activates_default(GTK_ENTRY(ld->etext), TRUE);
 	subbox = labelled_box_new(_("Link _Text:"), ld->etext);
 	gtk_box_pack_start(GTK_BOX(vbox), subbox, FALSE, FALSE, 0);
+	ld->titl = gtk_entry_new();
+	hhr = labelled_box_new(_("Link Title:"), ld->titl);
+	gtk_box_pack_start(GTK_BOX(vbox), hhr, FALSE, FALSE, 0);
 
-	gtk_box_pack_start(GTK_BOX(vbox), 
+	gtk_box_pack_start(GTK_BOX(vbox),
 			radio_option(NULL, &ld->rurl, &ld->eurl, _("_URL:"), NULL, ""),
 			FALSE, FALSE, 0);
 
 	rgroup = gtk_radio_button_get_group(GTK_RADIO_BUTTON(ld->rurl));
 
 	if (livejournal) {
-		gtk_box_pack_start(GTK_BOX(vbox), 
-				radio_option(rgroup, &ld->ruser, &ld->euser, 
+		gtk_box_pack_start(GTK_BOX(vbox),
+				radio_option(rgroup, &ld->ruser, &ld->euser,
 					_("_LiveJournal User:"), ".../users/", ""),
 				FALSE, FALSE, 0);
 	}
@@ -146,7 +150,7 @@ has_url(char *buf) {
 
 static void
 prepopulate_fields(LinkDialog *ld, char *bufsel) {
-	GtkClipboard *clipboard; 
+	GtkClipboard *clipboard;
 	char *clipsel, *url = NULL;
 
 	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
@@ -157,7 +161,7 @@ prepopulate_fields(LinkDialog *ld, char *bufsel) {
 	} else if (clipsel && has_url(clipsel)) {
 		url = clipsel;
 	}
-	
+
 	if (bufsel)
 		gtk_entry_set_text(GTK_ENTRY(ld->etext), bufsel);
 	if (url) {
@@ -178,7 +182,7 @@ prepopulate_fields(LinkDialog *ld, char *bufsel) {
 
 static char*
 get_link(LinkDialog *ld, JamAccount *acc) {
-	char *url, *user, *text;
+	char *url, *user, *text, *title;
 	char *link = NULL;
 
 	url  = gtk_editable_get_chars(GTK_EDITABLE(ld->eurl),  0, -1);
@@ -187,10 +191,15 @@ get_link(LinkDialog *ld, JamAccount *acc) {
 	xml_escape(&user);
 	text = gtk_editable_get_chars(GTK_EDITABLE(ld->etext), 0, -1);
 	xml_escape(&text);
+	title = gtk_editable_get_chars(GTK_EDITABLE(ld->titl), 0, -1);
 
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ld->rurl))) {
 		/* build a "url" link. */
-		link = g_strdup_printf("<a href=\"%s\">%s</a>", url, text);
+		if (title && *title) {
+			link = g_strdup_printf("<a href=\"%s\" title=\"%s\">%s</a>", url, title, text);
+		} else {
+			link = g_strdup_printf("<a href=\"%s\">%s</a>", url, text);
+		}
 	} else if (ld->ruser &&
 			gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ld->ruser))) {
 		/* build a "friends" link. */
@@ -200,11 +209,12 @@ get_link(LinkDialog *ld, JamAccount *acc) {
 		xml_escape(&url);
 		link = g_strdup_printf("<a href=\"%s/users/%s\">%s</a>",
 				url, user, text);
-	} 
+	}
 	g_free(url);
 	g_free(user);
 	g_free(text);
-	
+	g_free(title);
+
 	return link;
 }
 

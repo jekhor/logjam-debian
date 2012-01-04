@@ -29,6 +29,7 @@
 #include "conf_xml.h"
 #include "jamdoc.h"
 #include "cmdline.h"
+#include "lj_dbus.h"
 
 #ifdef HAVE_GTK
 #include "login.h"
@@ -86,7 +87,7 @@ try_remote_command(JamAccount *acc) {
 static void
 init_app(int *argc, gchar *argv[]) {
 	gint i, shift = 0;
-	
+
 	memset(&app, 0, sizeof(Application));
 	app.programname      = argv[0]; /* not the same as PROGRAMNAME */
 
@@ -120,12 +121,15 @@ init_app(int *argc, gchar *argv[]) {
 }
 
 #ifdef HAVE_GTK
+
+extern JamDBus *jdbus;
+
 static void
 run_gtk(JamDoc *doc) {
 	gchar *accelpath;
 
 	app.remote = logjam_remote_new();
-	
+
 	accelpath = g_build_filename(app.conf_dir, "accels", NULL);
 	gtk_accel_map_load(accelpath);
 
@@ -148,7 +152,19 @@ run_gtk(JamDoc *doc) {
 		jam_doc_set_account(doc, acc);
 	}
 
+	jdbus = lj_dbus_new();
+	if (conf.music_mpris) {
+		GError *error = NULL;
+		if (!lj_dbus_mpris_update_list(jdbus, &error)) {
+			g_printerr("Error: %s\n", error->message);
+			g_error_free(error);
+		}
+	}
+
 	jam_run(doc);
+
+	lj_dbus_close(jdbus);
+	jdbus = NULL;
 
 	g_object_unref(G_OBJECT(app.remote));
 
@@ -177,13 +193,13 @@ setup_locales() {
 
 static void
 setup_glibgdk() {
-#ifdef HAVE_GTK
+#if defined (HAVE_GTK) && defined (G_OS_WIN32)
 	/* calls to these thread inits must happen before any other
 	 * g* calls. */
 	if (!g_thread_supported()) g_thread_init(NULL);
 	gdk_threads_init();
 	gdk_threads_enter();
-#endif /* HAVE_GTK */
+#endif /* HAVE_GTK && G_OS_WIN32 */
 
 	g_type_init();
 
@@ -201,17 +217,17 @@ main(int argc, char* argv[]) {
 
 	setup_glibgdk();
 
-	init_app(&argc, argv); /* should be called before conf_read */
-	conf_read(&conf, app.conf_dir);
-	set_defaults();
-	jam_account_logjam_init();
-
 #ifdef HAVE_GTK
 #ifdef G_OS_WIN32
 	gtk_rc_add_default_file("gtkrc");
 #endif
 	has_gtk = gtk_init_check(&argc, &argv);
 #endif
+
+	init_app(&argc, argv); /* should be called before conf_read */
+	conf_read(&conf, app.conf_dir);
+	set_defaults();
+	jam_account_logjam_init();
 
 	doc = jam_doc_new();
 	cmdline_parse(doc, argc, argv); /* may terminate. */

@@ -9,12 +9,16 @@
 #include "gtk-all.h"
 
 #include "conf.h"
+#include "lj_dbus.h"
 #include "music.h"
+
+JamDBus *jdbus = NULL;
 
 const CommandList music_commands[] = {
 	{ N_("None"), NULL },
+	{ "Banshee", "logjam-banshee-client" },
 	{ "Music Player Daemon", "sh -c \"mpc | grep -v '^volume: .* repeat: .* random: .*'\"" },
-	{ "Rhythmbox", "rhythmbox --print-playing" },
+	{ "Rhythmbox", "rhythmbox-client --print-playing" },
 	{ "XMMS / Beep", "logjam-xmms-client" },
 	{ "amaroK", "dcop amarok player nowPlaying" },
 	{ NULL, NULL }
