@@ -537,13 +537,7 @@ music_diagnose(GtkWidget *button) {
 	}
 
 	if (!music) {
-		if (source == MUSIC_SOURCE_XMMS &&
-				err->domain == G_SPAWN_ERROR && err->code == G_SPAWN_ERROR_NOENT) {
-			jam_warning(dlg, _("LogJam XMMS helper not found.  "
-						"Did you install LogJam's XMMS support?"));
-		} else {
-			jam_warning(dlg, _("Error detecting music: %s"), err->message);
-		}
+		jam_warning(dlg, _("Error detecting music: %s"), err->message);
 		g_error_free(err);
 		return;
 	}

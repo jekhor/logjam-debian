@@ -424,6 +424,11 @@ menu_usejournal_changed(JamWin *jw) {
 		return;
 	}
 
+	/* Hack: destroy the submenu in case it's still displayed while this is
+	 * called (e.g. user presses Space), since otherwise GTK will crap itself
+	 * while an input lock is held */
+	if (GTK_IS_WIDGET(gtk_menu_item_get_submenu(GTK_MENU_ITEM(musejournal))))
+		gtk_widget_destroy(gtk_menu_item_get_submenu(GTK_MENU_ITEM(musejournal)));
 	menu = usejournal_build_menu(u->username,
 	                             jam_doc_get_usejournal(jw->doc),
 	                             u->usejournals,

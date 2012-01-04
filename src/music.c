@@ -19,8 +19,9 @@ const CommandList music_commands[] = {
 	{ "Banshee", "logjam-banshee-client" },
 	{ "Music Player Daemon", "sh -c \"mpc | grep -v '^volume: .* repeat: .* random: .*'\"" },
 	{ "Rhythmbox", "rhythmbox-client --print-playing" },
-	{ "XMMS / Beep", "logjam-xmms-client" },
 	{ "amaroK", "dcop amarok player nowPlaying" },
+	{ "Audacious", "audtool current-song" },
+	{ "Quod Libet", "quodlibet --print-playing" },
 	{ NULL, NULL }
 };
 
