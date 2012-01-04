@@ -1,14 +1,16 @@
 From: Yauhen Kharuzhy <jekhor@gmail.com>
-Date: Mon, 26 Dec 2011 01:18:23 +0300
-Subject: Apply patch 00_debian.patch
+Date: Wed, 4 Jan 2012 23:20:48 +0300
+Subject: Debian-specific changes
 
-Signed-off-by: Yauhen Kharuzhy <jekhor@gmail.com>
+Remove XMMS music detection.
+Add music detection for Audacious and Quod Libet.
+Add hack for GTK submenu.
 ---
  src/menu.c     |    5 +++++
  src/music.c    |    3 ++-
- src/music.h    |    2 ++
+ src/music.h    |    3 ++-
  src/settings.c |    8 +-------
- 4 files changed, 10 insertions(+), 8 deletions(-)
+ 4 files changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/src/menu.c b/src/menu.c
 index 22c2b08..d7bf4af 100644
@@ -42,12 +44,14 @@ index 33e8472..2528f4e 100644
  };
  
 diff --git a/src/music.h b/src/music.h
-index e5ee4e1..99c3cb8 100644
+index e5ee4e1..771a612 100644
 --- a/src/music.h
 +++ b/src/music.h
-@@ -19,6 +19,8 @@ typedef enum {
+@@ -17,8 +17,9 @@ typedef enum {
+ 	MUSIC_SOURCE_BANSHEE,
+ 	MUSIC_SOURCE_MPD,
  	MUSIC_SOURCE_RHYTHMBOX,
- 	MUSIC_SOURCE_XMMS,
+-	MUSIC_SOURCE_XMMS,
  	MUSIC_SOURCE_AMAROK,
 +	MUSIC_SOURCE_AUDACIOUS,
 +	MUSIC_SOURCE_QUODLIBET,
