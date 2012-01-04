@@ -2,13 +2,8 @@
 # List of source files which contain translatable strings.
 # To update use: sh update-potfiles.sh > POTFILES.in
 [encoding: UTF-8]
-build/win32/config.h
 data/logjam.desktop.in
 images/inline.h
-images/pixbufs.h
-protocol/blogger/blogger.c
-protocol/blogger/blogger.h
-protocol/liblivejournal/config.h
 protocol/liblivejournal/livejournal/checkfriends.c
 protocol/liblivejournal/livejournal/checkfriends.h
 protocol/liblivejournal/livejournal/consolecommand.c
@@ -57,7 +52,6 @@ src/about.c
 src/about.h
 src/account.c
 src/account.h
-src/blogger.c
 src/checkfriends.c
 src/checkfriends-gtk.c
 src/checkfriends.h
@@ -66,13 +60,10 @@ src/cmdline_data.h
 src/cmdline.h
 src/conf.c
 src/conf.h
-src/config-win32.h
 src/conf_xml.c
 src/conf_xml.h
 src/console.c
 src/console.h
-src/dash/dashboard-frontend.c
-src/dash/dashboard-frontend.h
 src/datesel.c
 src/datesel.h
 src/docklet.c
@@ -81,8 +72,6 @@ src/draftstore.h
 src/draftstore_ui.c
 src/eggtrayicon.c
 src/eggtrayicon.h
-src/foldbox.c
-src/foldbox.h
 src/friendedit.c
 src/friendedit.h
 src/friendgroupedit.c
@@ -154,7 +143,6 @@ src/pollcreator.c
 src/pollcreator.h
 src/poll.h
 src/poll-questions.c
-src/popcalendar.c
 src/preview.c
 src/preview.h
 src/progress.c
@@ -169,8 +157,6 @@ src/smartquotes.c
 src/smartquotes.h
 src/spawn.c
 src/spawn.h
-src/structuredtext.c
-src/structuredtext.h
 src/sync.c
 src/sync.h
 src/tags.c
@@ -192,7 +178,4 @@ src/util.c
 src/util-gtk.c
 src/util-gtk.h
 src/util.h
-util/gxr/gxr.c
-util/gxr/gxr.h
-util/gxr/gxr-internal.h
 util/xmmsclient/logjam-xmms-client.c
